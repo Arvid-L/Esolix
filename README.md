@@ -1,5 +1,5 @@
 # Esolix
-Collection of different esolang interpreters, implemented with Elixir
+Collection of different esolang interpreters, implemented in Elixir.
 
 **TODO: Add description**
 
