@@ -11,6 +11,15 @@ defmodule Esolix.Memory.Tape do
 
   alias Esolix.Memory.Tape
 
+  defmodule OutOfBoundsError do
+    defexception [:message]
+
+    def exception(%Tape{} = tape) do
+      msg = "Pointer moved out of bounds (address: #{tape.pointer}) on tape with width #{tape.width}"
+      %OutOfBoundsError{message: msg}
+    end
+  end
+
   def init(params \\ []) do
     width = params[:width] || 300000
     intital_pointer = params[:initial_pointer] || 0
@@ -76,7 +85,7 @@ defmodule Esolix.Memory.Tape do
         pointer < 0 && loop ->
           width - 1
         (pointer >= width || pointer < 0) ->
-          raise "Tape Pointer is out of Bounds"
+          raise OutOfBoundsError, tape
         true ->
           pointer
       end
