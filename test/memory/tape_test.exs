@@ -15,11 +15,11 @@ defmodule TapeTest do
 
   describe "left/1 or right/1" do
     test "can't go out of bounds on normal tape" do
-      assert_raise RuntimeError, fn ->
+      assert_raise Esolix.Memory.Tape.OutOfBoundsError, fn ->
         Tape.left(@tape_short)
       end
 
-      assert_raise RuntimeError, fn ->
+      assert_raise Esolix.Memory.Tape.OutOfBoundsError, fn ->
         Tape.right(@tape_short)
       end
     end
@@ -64,6 +64,25 @@ defmodule TapeTest do
 
       assert Tape.cell(tape) == 0
     end
+
+    test "default should not overflow" do
+      tape = Tape.dec(@tape)
+
+      assert Tape.cell(tape) == -1
+    end
+
+    test "with limited byte size should underflow" do
+      tape = Tape.init(cell_byte_size: 1) |> Tape.dec()
+
+      assert Tape.cell(tape) == 255
+    end
+
+    test "with limited byte size should overflow" do
+      tape = Tape.init(cell_byte_size: 1, initial_cell_value: 254) |> Tape.inc() |> Tape.inc()
+
+      assert Tape.cell(tape) == 0
+    end
+
 
   end
 

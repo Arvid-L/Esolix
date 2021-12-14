@@ -6,7 +6,8 @@ defmodule Esolix.Memory.Tape do
     width: 300000,
     pointer: 0,
     cells: [],
-    loop: false
+    cell_byte_size: 1,
+    loop: false,
   ]
 
   alias Esolix.Memory.Tape
@@ -24,11 +25,12 @@ defmodule Esolix.Memory.Tape do
     width = params[:width] || 300000
     intital_pointer = params[:initial_pointer] || 0
     initial_cell_value = params[:initial_cell_value] || 0
+    cell_byte_size = params[:cell_byte_size] || :no_limit
     loop = params[:loop] || false
 
     cells = List.duplicate(initial_cell_value, width)
 
-    %Tape{pointer: intital_pointer, cells: cells, width: width, loop: loop}
+    %Tape{pointer: intital_pointer, cells: cells, width: width, loop: loop, cell_byte_size: cell_byte_size}
   end
 
   def right(%Tape{pointer: pointer} = tape) do
@@ -45,21 +47,21 @@ defmodule Esolix.Memory.Tape do
     Enum.at(cells, pointer)
   end
 
-  def inc(%Tape{pointer: pointer, cells: cells} = tape) do
+  def inc(%Tape{pointer: pointer, cells: cells, cell_byte_size: cell_byte_size} = tape) do
     cells =
       Enum.with_index(cells)
       |> Enum.map(fn {cell, index} ->
-        if index == pointer, do: cell + 1, else: cell
+        if index == pointer, do: validate_overflow(cell + 1, cell_byte_size), else: cell
       end)
 
     %{tape | cells: cells}
   end
 
-  def dec(%Tape{pointer: pointer, cells: cells} = tape) do
+  def dec(%Tape{pointer: pointer, cells: cells, cell_byte_size: cell_byte_size} = tape) do
     cells =
       Enum.with_index(cells)
       |> Enum.map(fn {cell, index} ->
-        if index == pointer, do: cell - 1, else: cell
+        if index == pointer, do: validate_overflow(cell - 1, cell_byte_size), else: cell
       end)
 
     %{tape | cells: cells}
@@ -91,6 +93,24 @@ defmodule Esolix.Memory.Tape do
       end
 
     %{tape | pointer: pointer}
+  end
+
+  defp validate_overflow(cell, cell_byte_size) do
+    case cell_byte_size do
+      :no_limit ->
+        cell
+      _ ->
+        max_size = Bitwise.bsl(1, cell_byte_size * 8)
+        cond do
+          cell >= max_size ->
+            rem(cell, max_size)
+          cell < 0 ->
+            max_size - 1
+          true ->
+            cell
+        end
+    end
+
   end
 
 end
