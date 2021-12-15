@@ -6,7 +6,9 @@ defmodule Esolix.Langs.BrainfuckTest do
 
   describe "run/1" do
     test "Example code should print \"Hello World!\"" do
-      assert Brainfuck.run("++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.") == "Hello World!"
+      assert capture_io(fn ->
+        Brainfuck.run("++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.")
+      end) == "Hello World!\n"
     end
 
     test "should mirror input" do
@@ -40,7 +42,7 @@ defmodule Esolix.Langs.BrainfuckTest do
         >>.++.+++++++..<-.>>-
         Clean up used cells.
         [[-]<]
-        """, [width: 10])
+        """)
       end) == "8 bit cells\n"
     end
 
@@ -68,7 +70,7 @@ defmodule Esolix.Langs.BrainfuckTest do
         >>.++.+++++++..<-.>>-
         Clean up used cells.
         [[-]<]
-        """, [cell_byte_size: 2, width: 10])
+        """, "", [tape_params: [cell_byte_size: 2]])
       end) == "16 bit cells\n"
     end
 
@@ -96,7 +98,7 @@ defmodule Esolix.Langs.BrainfuckTest do
         >>.++.+++++++..<-.>>-
         Clean up used cells.
         [[-]<]
-        """, [cell_byte_size: 4, width: 10])
+        """, "", [tape_params: [cell_byte_size: 4]])
       end) == "32 bit cells\n"
     end
   end
