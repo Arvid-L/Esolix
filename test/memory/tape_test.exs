@@ -1,25 +1,25 @@
-defmodule Esolix.Memory.TapeTest do
+defmodule Esolix.DataStructures.TapeTest do
   use ExUnit.Case, async: true
-  alias Esolix.Memory.Tape
+  alias Esolix.DataStructures.Tape
 
   @tape Tape.init([width: 5, loop: false])
   @tape_short Tape.init([width: 1, loop: false])
   @tape_looped Tape.init([width: 3, loop: true])
 
   describe "init/1" do
-    test "creates Esolix.Memory.Tape struct" do
-      assert Tape.init().__struct__ == Esolix.Memory.Tape
+    test "creates Esolix.DataStructures.Tape struct" do
+      assert Tape.init().__struct__ == Esolix.DataStructures.Tape
     end
   end
 
 
   describe "left/1 or right/1" do
     test "can't go out of bounds on normal tape" do
-      assert_raise Esolix.Memory.Tape.OutOfBoundsError, fn ->
+      assert_raise Esolix.DataStructures.Tape.OutOfBoundsError, fn ->
         Tape.left(@tape_short)
       end
 
-      assert_raise Esolix.Memory.Tape.OutOfBoundsError, fn ->
+      assert_raise Esolix.DataStructures.Tape.OutOfBoundsError, fn ->
         Tape.right(@tape_short)
       end
     end

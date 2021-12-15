@@ -12,7 +12,7 @@ defmodule Esolix.Langs.Brainfuck do
   # [	Jump past the matching ] if the cell at the pointer is 0
   # ]	Jump back to the matching [ if the cell at the pointer is nonzero
 
-  alias Esolix.Memory.Tape
+  alias Esolix.DataStructures.Tape
 
   @default_tape_params [width: 300000, loop: false, cell_byte_size: 1, initial_cell_value: 0, initial_pointer: 0]
 

@@ -1,9 +1,9 @@
-defmodule Esolix.Memory.Stack do
+defmodule Esolix.DataStructures.Stack do
   @moduledoc """
   Documentation for the simulated stack used by different esolangs.
   """
 
-  alias Esolix.Memory.Stack
+  alias Esolix.DataStructures.Stack
 
   defstruct elements: []
 

@@ -1,4 +1,4 @@
-defmodule Esolix.Memory.Tape do
+defmodule Esolix.DataStructures.Tape do
   @moduledoc """
   Documentation for the simulated turing-like tape used by different esolangs.
   """
@@ -13,7 +13,7 @@ defmodule Esolix.Memory.Tape do
 
   # TODO: Optimize, find bottlenecks. Some steps take way too much time
 
-  alias Esolix.Memory.Tape
+  alias Esolix.DataStructures.Tape
 
   defmodule OutOfBoundsError do
     defexception [:message]
