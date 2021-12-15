@@ -16,6 +16,24 @@ defmodule Esolix.Langs.Brainfuck do
 
   @default_tape_params [width: 300000, loop: false, cell_byte_size: 1, initial_cell_value: 0, initial_pointer: 0]
 
+  defmodule UnbalancedBracketsError do
+    defexception [:message]
+
+    def exception() do
+      msg = "Invalid Brainfuck Code caused by unbalanced square brackets"
+      %UnbalancedBracketsError{message: msg}
+    end
+  end
+
+  defmodule WrongFileExtensionError do
+    defexception [:message]
+
+    def exception(file) do
+      msg = "File #{file} does not have the .bf extension"
+      %WrongFileExtensionError{message: msg}
+    end
+  end
+
     @doc """
       Run Brainfuck Code
 
@@ -25,11 +43,13 @@ defmodule Esolix.Langs.Brainfuck do
           "Hello World!"
 
     """
-  def eval(code, input \\ "", opts \\ []) do
-    tape_params = opts[:tape_params] || @default_tape_params
-    tape_params = tape_params ++ [input: input]
+  def eval(code, params \\ []) do
+    validate_code(code)
 
-    tape = Tape.init(tape_params)
+    tape_params = params[:tape_params] || @default_tape_params
+    input = params[:input] || ""
+    tape_params = tape_params ++ [input: input]
+    tape = params[:tape] || Tape.init(tape_params)
 
     code |> group_by_brackets()
     |> Enum.reduce(tape, fn section, tape_acc ->
@@ -37,6 +57,28 @@ defmodule Esolix.Langs.Brainfuck do
     end)
 
     :ok
+  end
+
+  def eval_file(file, params \\ []) do
+    validate_file(file)
+    |> extract_file_contents()
+    |> eval(params)
+  end
+
+  defp validate_file(file) do
+    if String.ends_with?(file, ".bf"), do: file, else: raise WrongFileExtensionError, file
+  end
+
+  defp extract_file_contents(file) do
+    File.read!(file)
+  end
+
+  defp validate_code(code) do
+    # TODO if brackets are balnced also check if they are positioned correctly to catch cases like "]+++["
+    graphemes = String.graphemes(code)
+    unless Enum.count(graphemes, & &1 == "[") == Enum.count(graphemes, & &1 == "]") do
+      raise UnbalancedBracketsError
+    end
   end
 
   defp run_section(code, tape) do

@@ -4,7 +4,7 @@ defmodule Esolix.Langs.BrainfuckTest do
 
   alias Esolix.Langs.Brainfuck
 
-  describe "run/1" do
+  describe "eval/3" do
     test "Example code should print \"Hello World!\"" do
       assert capture_io(fn ->
         Brainfuck.eval("++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.")
@@ -13,7 +13,7 @@ defmodule Esolix.Langs.BrainfuckTest do
 
     test "should mirror input" do
       assert capture_io(fn ->
-        Brainfuck.eval(",.,.,.,.,.,.", "hello!")
+        Brainfuck.eval(",.,.,.,.,.,.", [input: "hello!"])
       end) == "hello!"
     end
 
@@ -70,7 +70,7 @@ defmodule Esolix.Langs.BrainfuckTest do
         >>.++.+++++++..<-.>>-
         Clean up used cells.
         [[-]<]
-        """, "", [tape_params: [cell_byte_size: 2]])
+        """, tape_params: [cell_byte_size: 2])
       end) == "16 bit cells\n"
     end
 
@@ -98,8 +98,22 @@ defmodule Esolix.Langs.BrainfuckTest do
         >>.++.+++++++..<-.>>-
         Clean up used cells.
         [[-]<]
-        """, "", [tape_params: [cell_byte_size: 4]])
+        """, tape_params: [cell_byte_size: 4])
       end) == "32 bit cells\n"
+    end
+  end
+
+  describe "eval_file/3" do
+    test "should throw error on wrong file extension" do
+      assert_raise Esolix.Langs.Brainfuck.WrongFileExtensionError, fn ->
+        Brainfuck.eval_file("not_a_brainfuck_file.png")
+      end
+    end
+
+    test "hello_world.bf should print \"Hello World!\"" do
+      assert capture_io(fn ->
+        Brainfuck.eval_file("test/langs/brainfuck/hello_world.bf")
+      end) == "Hello World!\n"
     end
   end
 
