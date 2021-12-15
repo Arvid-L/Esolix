@@ -52,6 +52,7 @@ defmodule Esolix.Langs.Brainfuck do
           |> Enum.reduce(tape, fn section, tape_acc ->
             run_section(section, tape_acc)
           end)
+        # Reached end of bracket section, if current cell != 0 do it again
         if Tape.cell(tape) != 0, do: run_section(code, tape), else: tape
       # Case 3: Run single instructions
       true ->
@@ -62,7 +63,7 @@ defmodule Esolix.Langs.Brainfuck do
     end
   end
 
-  def group_by_brackets(code) do
+  defp group_by_brackets(code) do
     # https://stackoverflow.com/a/19863847/12954117
     # https://www.regular-expressions.info/recurse.html#balanced
     regex = ~r/\[(?>[^\[\]]|(?R))*\]/

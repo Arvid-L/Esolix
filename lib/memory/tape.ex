@@ -79,6 +79,7 @@ defmodule Esolix.Memory.Tape do
   end
 
   defp write(%Tape{cells: cells, pointer: pointer} = tape, data) do
+    data = if is_integer(data), do: data, else: String.to_charlist(data) |> Enum.at(0)
     cells = List.replace_at(cells, pointer, data)
 
     %{tape | cells: cells}
