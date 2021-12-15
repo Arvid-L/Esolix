@@ -1,7 +1,24 @@
 # Esolix
-Collection of different esolang interpreters, implemented in Elixir.
+Collection of different esolang (esoteric programming language) interpreters, implemented in Elixir.
 
 **TODO: Add description**
+
+## Which Esolangs are already (kind of) implemented?
+
+- Brainfuck (https://esolangs.org/wiki/Brainfuck)
+
+## Want to add another Esolang?
+
+```sh
+mix template.gen somelanguage
+```
+
+This will generate three files with a basic structure, which is defined in their corresponding _template.ex files.
+
+- mix/langs/somelanguage.ex -> Mix Task to run the Code from "somelanguage" directly or from a file using "mix somelanguage path/to/file_with_somelanguage_code
+- lib/langs/somelanguage.ex -> The module with the interpreter/evaluator/compiler to be implemented for "somelanguage".
+- test/langs/somelanguage/somelanguage_test.ex -> Test for the somelanguage Module.
+
 
 ## Installation
 
