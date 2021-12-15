@@ -34,15 +34,15 @@ defmodule Esolix.Langs.Brainfuck do
     end
   end
 
-    @doc """
-      Run Brainfuck Code
+  @doc """
+    Run Brainfuck Code
 
-      ## Examples
+    ## Examples
 
-          iex> Brainfuck.eval("++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.")
-          "Hello World!"
+      iex> Brainfuck.eval("++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.")
+      "Hello World!"
 
-    """
+  """
   def eval(code, params \\ []) do
     validate_code(code)
 
@@ -59,6 +59,15 @@ defmodule Esolix.Langs.Brainfuck do
     :ok
   end
 
+  @doc """
+    Run Brainfuck Code from file
+
+    ## Examples
+
+      iex> Brainfuck.eval_file("path/to/hello_world.bf")
+      "Hello World!"
+
+  """
   def eval_file(file, params \\ []) do
     validate_file(file)
     |> extract_file_contents()
