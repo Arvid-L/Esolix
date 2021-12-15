@@ -21,11 +21,11 @@ defmodule Esolix.Langs.Brainfuck do
 
       ## Examples
 
-          iex> Brainfuck.run("++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.")
+          iex> Brainfuck.eval("++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.")
           "Hello World!"
 
     """
-  def run(code, input \\ "", opts \\ []) do
+  def eval(code, input \\ "", opts \\ []) do
     tape_params = opts[:tape_params] || @default_tape_params
     tape_params = tape_params ++ [input: input]
 
