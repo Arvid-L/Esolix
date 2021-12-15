@@ -8,7 +8,10 @@ defmodule Esolix.Memory.Tape do
     cells: [],
     cell_byte_size: 1,
     loop: false,
+    input: ""
   ]
+
+  # TODO: Optimize, find bottlenecks. Some steps take way too much time
 
   alias Esolix.Memory.Tape
 
@@ -27,10 +30,11 @@ defmodule Esolix.Memory.Tape do
     initial_cell_value = params[:initial_cell_value] || 0
     cell_byte_size = params[:cell_byte_size] || :no_limit
     loop = params[:loop] || false
+    input = params[:input] || ""
 
     cells = List.duplicate(initial_cell_value, width)
 
-    %Tape{pointer: intital_pointer, cells: cells, width: width, loop: loop, cell_byte_size: cell_byte_size}
+    %Tape{pointer: intital_pointer, cells: cells, width: width, loop: loop, cell_byte_size: cell_byte_size, input: input}
   end
 
   def right(%Tape{pointer: pointer} = tape) do
@@ -67,16 +71,40 @@ defmodule Esolix.Memory.Tape do
     %{tape | cells: cells}
   end
 
-  def print(%Tape{pointer: pointer, cells: cells} = _tape, opts \\ []) do
+  def handle_input(%Tape{input: input} = tape) do
+    {tape, input} =
+      case String.length(input) do
+        0 ->
+          {tape, ""}
+        _ ->
+          {char, remaining_input} = String.split_at(input, 1)
+          {save_data(tape, char), remaining_input}
+      end
+
+    %{tape | input: input}
+  end
+
+  defp save_data(%Tape{cells: cells, pointer: pointer} = tape, data) do
+    cells =
+      Enum.with_index(cells)
+      |> Enum.map(fn {cell, index} ->
+        if index == pointer, do: String.to_charlist(data) |> Enum.at(0), else: cell
+      end)
+
+    %{tape | cells: cells}
+  end
+
+  def print(%Tape{} = tape, opts \\ []) do
     data =
       case opts[:mode] do
         :ascii ->
-          List.to_string([Enum.at(cells, pointer)])
+          List.to_string([Tape.cell(tape)])
         _ ->
-          Enum.at(cells, pointer)
+          Tape.cell(tape)
       end
 
     IO.write(data)
+    tape
   end
 
   defp validate_boundary(%Tape{pointer: pointer, width: width, loop: loop} = tape) do

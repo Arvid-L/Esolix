@@ -1,4 +1,4 @@
-defmodule TapeTest do
+defmodule Esolix.Memory.TapeTest do
   use ExUnit.Case, async: true
   alias Esolix.Memory.Tape
 
