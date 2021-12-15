@@ -51,24 +51,18 @@ defmodule Esolix.Memory.Tape do
     Enum.at(cells, pointer)
   end
 
-  def inc(%Tape{pointer: pointer, cells: cells, cell_byte_size: cell_byte_size} = tape) do
-    cells =
-      Enum.with_index(cells)
-      |> Enum.map(fn {cell, index} ->
-        if index == pointer, do: validate_overflow(cell + 1, cell_byte_size), else: cell
-      end)
+  def inc(%Tape{} = tape) do
+    data = validate_overflow(tape, Tape.cell(tape) + 1)
+    tape = write(tape, data)
 
-    %{tape | cells: cells}
+    tape
   end
 
-  def dec(%Tape{pointer: pointer, cells: cells, cell_byte_size: cell_byte_size} = tape) do
-    cells =
-      Enum.with_index(cells)
-      |> Enum.map(fn {cell, index} ->
-        if index == pointer, do: validate_overflow(cell - 1, cell_byte_size), else: cell
-      end)
+  def dec(%Tape{} = tape) do
+    data = validate_overflow(tape, Tape.cell(tape) - 1)
+    tape = write(tape, data)
 
-    %{tape | cells: cells}
+    tape
   end
 
   def handle_input(%Tape{input: input} = tape) do
@@ -78,18 +72,14 @@ defmodule Esolix.Memory.Tape do
           {tape, ""}
         _ ->
           {char, remaining_input} = String.split_at(input, 1)
-          {save_data(tape, char), remaining_input}
+          {write(tape, char), remaining_input}
       end
 
     %{tape | input: input}
   end
 
-  defp save_data(%Tape{cells: cells, pointer: pointer} = tape, data) do
-    cells =
-      Enum.with_index(cells)
-      |> Enum.map(fn {cell, index} ->
-        if index == pointer, do: String.to_charlist(data) |> Enum.at(0), else: cell
-      end)
+  defp write(%Tape{cells: cells, pointer: pointer} = tape, data) do
+    cells = List.replace_at(cells, pointer, data)
 
     %{tape | cells: cells}
   end
@@ -123,7 +113,7 @@ defmodule Esolix.Memory.Tape do
     %{tape | pointer: pointer}
   end
 
-  defp validate_overflow(cell, cell_byte_size) do
+  defp validate_overflow(%Tape{cell_byte_size: cell_byte_size}, cell) do
     case cell_byte_size do
       :no_limit ->
         cell
