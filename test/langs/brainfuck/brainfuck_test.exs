@@ -115,6 +115,20 @@ defmodule Esolix.Langs.BrainfuckTest do
         Brainfuck.eval_file("test/langs/brainfuck/hello_world.bf")
       end) == "Hello World!\n"
     end
+
+    test "byte_size.bf should calculate correct byte size" do
+      assert capture_io(fn ->
+        Brainfuck.eval_file("test/langs/brainfuck/byte_size.bf", tape_params: [cell_byte_size: 1])
+      end) == "8 bit cells\n"
+
+      assert capture_io(fn ->
+        Brainfuck.eval_file("test/langs/brainfuck/byte_size.bf", tape_params: [cell_byte_size: 2])
+      end) == "16 bit cells\n"
+
+      assert capture_io(fn ->
+        Brainfuck.eval_file("test/langs/brainfuck/byte_size.bf", tape_params: [cell_byte_size: 4])
+      end) == "32 bit cells\n"
+    end
   end
 
 
