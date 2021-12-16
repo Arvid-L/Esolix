@@ -6,12 +6,14 @@ defmodule Esolix.DataStructures.Tape do
     width: 300000,
     pointer: 0,
     cells: [],
-    cell_byte_size: 1,
+    cell_bit_size: 8,
     loop: false,
-    input: ""
+    input: "",
+    output: ""
   ]
 
   # TODO: Optimize, find bottlenecks. Some steps take way too much time
+  # TODO: Optimize data structure by using bitstrings instead of Elixirs default bignum
 
   alias Esolix.DataStructures.Tape
 
@@ -25,16 +27,18 @@ defmodule Esolix.DataStructures.Tape do
   end
 
   def init(params \\ []) do
-    width = params[:width] || 300000
+    width = params[:width] || 30
     intital_pointer = params[:initial_pointer] || 0
+    cell_byte_size = params[:cell_byte_size] || 1
+    cell_bit_size = cell_byte_size * 8
     initial_cell_value = params[:initial_cell_value] || 0
-    cell_byte_size = params[:cell_byte_size] || :no_limit
     loop = params[:loop] || false
     input = params[:input] || ""
+    input = String.to_charlist(input)
 
-    cells = List.duplicate(initial_cell_value, width)
+    cells = List.duplicate(<<initial_cell_value::size(cell_bit_size)>>, width)
 
-    %Tape{pointer: intital_pointer, cells: cells, width: width, loop: loop, cell_byte_size: cell_byte_size, input: input}
+    %Tape{pointer: intital_pointer, cells: cells, width: width, loop: loop, cell_bit_size: cell_bit_size, input: input}
   end
 
   def right(%Tape{pointer: pointer} = tape) do
@@ -51,27 +55,29 @@ defmodule Esolix.DataStructures.Tape do
     Enum.at(cells, pointer)
   end
 
-  def inc(%Tape{} = tape) do
-    data = validate_overflow(tape, Tape.cell(tape) + 1)
-    tape = write(tape, data)
-
-    tape
+  def value(%Tape{pointer: pointer, cells: cells, cell_bit_size: cell_bit_size}) do
+    <<val::size(cell_bit_size)>> = Enum.at(cells, pointer)
+    val
   end
 
-  def dec(%Tape{} = tape) do
-    data = validate_overflow(tape, Tape.cell(tape) - 1)
-    tape = write(tape, data)
-
-    tape
+  def inc(%Tape{cell_bit_size: cell_bit_size} = tape) do
+    data = Tape.value(tape)
+    write(tape, <<data+1::size(cell_bit_size)>>)
   end
 
-  def handle_input(%Tape{input: input} = tape) do
+  def dec(%Tape{cell_bit_size: cell_bit_size} = tape) do
+    data = Tape.value(tape)
+    write(tape, <<data-1::size(cell_bit_size)>>)
+  end
+
+  def handle_input(%Tape{input: input, cell_bit_size: cell_bit_size} = tape) do
     {tape, input} =
-      case String.length(input) do
+      case length(input) do
         0 ->
-          {tape, ""}
+          {tape, []}
         _ ->
-          {char, remaining_input} = String.split_at(input, 1)
+          [char | remaining_input] = input
+          char = <<char::size(cell_bit_size)>>
           {write(tape, char), remaining_input}
       end
 
@@ -79,9 +85,7 @@ defmodule Esolix.DataStructures.Tape do
   end
 
   defp write(%Tape{cells: cells, pointer: pointer} = tape, data) do
-    data = if is_integer(data), do: data, else: String.to_charlist(data) |> Enum.at(0)
     cells = List.replace_at(cells, pointer, data)
-
     %{tape | cells: cells}
   end
 
@@ -89,9 +93,9 @@ defmodule Esolix.DataStructures.Tape do
     data =
       case opts[:mode] do
         :ascii ->
-          List.to_string([Tape.cell(tape)])
+          [Tape.value(tape)]
         _ ->
-          Tape.cell(tape)
+          Tape.value(tape)
       end
 
     IO.write(data)
@@ -114,22 +118,22 @@ defmodule Esolix.DataStructures.Tape do
     %{tape | pointer: pointer}
   end
 
-  defp validate_overflow(%Tape{cell_byte_size: cell_byte_size}, cell) do
-    case cell_byte_size do
-      :no_limit ->
-        cell
-      _ ->
-        max_size = Bitwise.bsl(1, cell_byte_size * 8)
-        cond do
-          cell >= max_size ->
-            rem(cell, max_size)
-          cell < 0 ->
-            max_size - 1
-          true ->
-            cell
-        end
-    end
+  # defp validate_overflow(%Tape{cell_byte_size: cell_byte_size}, cell) do
+  #   case cell_byte_size do
+  #     :no_limit ->
+  #       cell
+  #     _ ->
+  #       max_size = Bitwise.bsl(1, cell_byte_size * 8)
+  #       cond do
+  #         cell >= max_size ->
+  #           rem(cell, max_size)
+  #         cell < 0 ->
+  #           max_size - 1
+  #         true ->
+  #           cell
+  #       end
+  #   end
 
-  end
+  # end
 
 end
