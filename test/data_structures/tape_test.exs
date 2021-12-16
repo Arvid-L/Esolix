@@ -39,48 +39,49 @@ defmodule Esolix.DataStructures.TapeTest do
 
   describe "cell/1" do
     test "returns correct value (default)" do
-      assert Tape.cell(@tape) == 0
+      assert Tape.cell(@tape) == <<0>>
     end
 
     test "returns correct value (custom)" do
       tape = Tape.init([initial_cell_value: 1, width: 5])
 
-      assert Tape.cell(tape) == 1
+      assert Tape.cell(tape) == <<1>>
     end
 
   end
 
   describe "inc/1 or dec/1" do
     test "changes value correctly" do
-      assert Tape.cell(@tape) == 0
+      assert Tape.cell(@tape) == <<0>>
 
       tape =
         @tape
         |> Tape.inc()
 
-      assert Tape.cell(tape) == 1
+      assert Tape.cell(tape) == <<1>>
 
       tape = Tape.dec(tape)
 
-      assert Tape.cell(tape) == 0
+      assert Tape.cell(tape) == <<0>>
     end
 
-    test "default should not overflow" do
-      tape = Tape.dec(@tape)
+    # deprecated since I'm using bitstrings now
+    # test "default should not overflow" do
+    #   tape = Tape.dec(@tape)
 
-      assert Tape.cell(tape) == -1
-    end
+    #   assert Tape.cell(tape) == -1
+    # end
 
     test "with limited byte size should underflow" do
       tape = Tape.init(cell_byte_size: 1) |> Tape.dec()
 
-      assert Tape.cell(tape) == 255
+      assert Tape.cell(tape) == <<255>>
     end
 
     test "with limited byte size should overflow" do
       tape = Tape.init(cell_byte_size: 1, initial_cell_value: 254) |> Tape.inc() |> Tape.inc()
 
-      assert Tape.cell(tape) == 0
+      assert Tape.cell(tape) == <<0>>
     end
 
 

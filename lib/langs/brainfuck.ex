@@ -14,8 +14,18 @@ defmodule Esolix.Langs.Brainfuck do
 
   alias Esolix.DataStructures.Tape
 
-  @default_tape_params [width: 300000, loop: false, cell_byte_size: 1, initial_cell_value: 0, initial_pointer: 0]
+  defmodule BrainfuckCode do
+    defstruct [
+      code: "",
+      instruction_pointer: 0,
+      tape: Tape
+    ]
+  end
 
+  @default_tape_params [width: 10, loop: false, cell_byte_size: 1, initial_cell_value: 0, initial_pointer: 0]
+
+
+  # Custom Module Errors
   defmodule UnbalancedBracketsError do
     defexception [:message]
 
@@ -34,6 +44,84 @@ defmodule Esolix.Langs.Brainfuck do
     end
   end
 
+  def eval_alt(code, params \\ []) do
+    validate_code(code)
+    bf_code = %BrainfuckCode{code: String.to_charlist(code), tape: init_tape(params)}
+
+    execute_step(bf_code)
+  end
+
+  defp execute_step(%BrainfuckCode{code: code, tape: tape, instruction_pointer: instruction_pointer} = bf_code) do
+    instruction = Enum.at(code, instruction_pointer)
+    # debug(bf_code, code: false)
+
+    tape = execute_instruction(instruction, tape)
+    instruction_pointer =
+      case instruction do
+        ?[ ->
+          # Skip to next ']' if current cell 0
+          if Tape.value(tape) == 0 do
+            Enum.split(code, instruction_pointer)
+            |> elem(1)
+            |> Enum.reduce_while({0, 0}, fn char, {index, open_brackets} ->
+              open_brackets =
+                case char do
+                  ?[ ->
+                    open_brackets + 1
+                  ?] ->
+                    open_brackets - 1
+                  _ ->
+                    open_brackets
+                end
+              if open_brackets == 0 do
+                {:halt, index}
+              else
+                {:cont, {index + 1, open_brackets}}
+              end
+            end)
+            |> Kernel.+(instruction_pointer)
+          else
+            instruction_pointer + 1
+          end
+        ?] ->
+          # Jump back to previous '[' if current cell not zero
+          if Tape.value(tape) != 0 do
+            subtractor =
+              Enum.split(code, instruction_pointer)
+              |> elem(0)
+              |> Enum.reverse()
+              |> Enum.reduce_while({0, 1}, fn char, {index, open_brackets} ->
+                open_brackets =
+                  case char do
+                    ?[ ->
+                      open_brackets - 1
+                    ?] ->
+                      open_brackets + 1
+                    _ ->
+                      open_brackets
+                  end
+                if open_brackets == 0 do
+                  {:halt, index}
+                else
+                  {:cont, {index + 1, open_brackets}}
+                end
+              end)
+              |> Kernel.+(1)
+
+            instruction_pointer - subtractor
+
+          else
+            instruction_pointer + 1
+          end
+        _ ->
+          instruction_pointer + 1
+      end
+
+    if instruction_pointer < length(code) do
+      execute_step(%{bf_code | instruction_pointer: instruction_pointer, tape: tape})
+    end
+  end
+
   @doc """
     Run Brainfuck Code
 
@@ -45,11 +133,7 @@ defmodule Esolix.Langs.Brainfuck do
   """
   def eval(code, params \\ []) do
     validate_code(code)
-
-    tape_params = params[:tape_params] || @default_tape_params
-    input = params[:input] || ""
-    tape_params = tape_params ++ [input: input]
-    tape = params[:tape] || Tape.init(tape_params)
+    tape = init_tape(params)
 
     code |> group_by_brackets()
     |> Enum.reduce(tape, fn section, tape_acc ->
@@ -74,6 +158,14 @@ defmodule Esolix.Langs.Brainfuck do
     |> eval(params)
   end
 
+  defp init_tape(params \\ []) do
+    tape_params = params[:tape_params] || @default_tape_params
+    input = params[:input] || ""
+    tape_params = tape_params ++ [input: input]
+
+    params[:tape] || Tape.init(tape_params)
+  end
+
   defp validate_file(file) do
     if String.ends_with?(file, ".bf"), do: file, else: raise WrongFileExtensionError, file
   end
@@ -93,7 +185,7 @@ defmodule Esolix.Langs.Brainfuck do
   defp run_section(code, tape) do
     cond do
       # Case 1: Skip Section and jump behind corresponding "]"
-      String.starts_with?(code, "[") && Tape.cell(tape) == 0 ->
+      String.starts_with?(code, "[") && Tape.value(tape) == 0 ->
         tape
       # Case 2: Run Section between []-brackets, at the end decide if the bracket section needs to be done another time
       String.starts_with?(code, "[") ->
@@ -104,12 +196,12 @@ defmodule Esolix.Langs.Brainfuck do
             run_section(section, tape_acc)
           end)
         # Reached end of bracket section, if current cell != 0 do it again
-        if Tape.cell(tape) != 0, do: run_section(code, tape), else: tape
+        if Tape.value(tape) != 0, do: run_section(code, tape), else: tape
       # Case 3: Run single instructions
       true ->
         code |> String.to_charlist()
         |> Enum.reduce(tape, fn char, tape_acc ->
-          execute_char(char, tape_acc)
+          execute_instruction(char, tape_acc)
         end)
     end
   end
@@ -121,18 +213,31 @@ defmodule Esolix.Langs.Brainfuck do
     Regex.split(regex, code, include_captures: true)
   end
 
-  defp execute_char(char, tape) do
-    case [char] do
-      '>' -> Tape.right(tape)
-      '<' -> Tape.left(tape)
-      '+' -> Tape.inc(tape)
-      '-' -> Tape.dec(tape)
-      '.' -> Tape.print(tape, mode: :ascii)
-      ',' -> Tape.handle_input(tape)
-      '[' -> tape
-      ']' -> tape
+  defp execute_instruction(char, tape) do
+    case char do
+      ?> -> Tape.right(tape)
+      ?< -> Tape.left(tape)
+      ?+ -> Tape.inc(tape)
+      ?- -> Tape.dec(tape)
+      ?. -> Tape.print(tape, mode: :ascii)
+      ?, -> Tape.handle_input(tape)
+      ?[ -> tape
+      ?] -> tape
       _ -> tape
     end
+  end
+
+  defp debug(%BrainfuckCode{code: code, instruction_pointer: instruction_pointer, tape: tape} = bf_code, opts \\ []) do
+    if opts[:code] do
+      IO.inspect(List.replace_at(code, instruction_pointer, " ''''  #{[Enum.at(code, instruction_pointer)]}  '''' ") |> List.to_string(), label: "code")
+    end
+
+    IO.inspect("#{[Enum.at(code, instruction_pointer)]}", label: "#{instruction_pointer}")
+    IO.inspect("#{Tape.cell(tape)}", label: "cell#{tape.pointer}")
+    IO.puts("\n")
+    IO.puts("\n")
+    IO.puts("\n")
+
   end
 
 end
