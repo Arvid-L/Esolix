@@ -2,15 +2,13 @@ defmodule Esolix.DataStructures.Tape do
   @moduledoc """
   Documentation for the simulated turing-like tape used by different esolangs.
   """
-  defstruct [
-    width: 300000,
-    pointer: 0,
-    cells: [],
-    cell_bit_size: 8,
-    loop: false,
-    input: [],
-    output: []
-  ]
+  defstruct width: 300_000,
+            pointer: 0,
+            cells: [],
+            cell_bit_size: 8,
+            loop: false,
+            input: [],
+            output: []
 
   # TODO: Optimize, find bottlenecks. Some steps take way too much time
   # If all else fails, steal ideas from here: https://github.com/jhbabon/brainfuck.ex
@@ -24,7 +22,9 @@ defmodule Esolix.DataStructures.Tape do
     defexception [:message]
 
     def exception(%Tape{} = tape) do
-      msg = "Pointer moved out of bounds (address: #{tape.pointer}) on tape with width #{tape.width}"
+      msg =
+        "Pointer moved out of bounds (address: #{tape.pointer}) on tape with width #{tape.width}"
+
       %OutOfBoundsError{message: msg}
     end
   end
@@ -36,12 +36,17 @@ defmodule Esolix.DataStructures.Tape do
     cell_bit_size = cell_byte_size * 8
     initial_cell_value = params[:initial_cell_value] || 0
     loop = params[:loop] || false
-    input =
-      if String.valid?(params[:input]), do: String.to_charlist(params[:input]), else: []
-
+    input = if String.valid?(params[:input]), do: String.to_charlist(params[:input]), else: []
     cells = List.duplicate(<<initial_cell_value::size(cell_bit_size)>>, width)
 
-    %Tape{pointer: intital_pointer, cells: cells, width: width, loop: loop, cell_bit_size: cell_bit_size, input: input}
+    %Tape{
+      pointer: intital_pointer,
+      cells: cells,
+      width: width,
+      loop: loop,
+      cell_bit_size: cell_bit_size,
+      input: input
+    }
   end
 
   def right(%Tape{pointer: pointer} = tape) do
@@ -90,6 +95,7 @@ defmodule Esolix.DataStructures.Tape do
       case opts[:mode] do
         :ascii ->
           [Tape.value(tape)]
+
         _ ->
           Tape.value(tape)
       end
@@ -103,16 +109,17 @@ defmodule Esolix.DataStructures.Tape do
       cond do
         pointer >= width && loop ->
           rem(pointer, width)
+
         pointer < 0 && loop ->
           width - 1
-        (pointer >= width || pointer < 0) ->
+
+        pointer >= width || pointer < 0 ->
           raise OutOfBoundsError, tape
+
         true ->
           pointer
       end
 
     %{tape | pointer: pointer}
   end
-
-
 end

@@ -18,12 +18,11 @@ defmodule Esolix.Langs.Chicken do
   # 9	char	    BBQ	      Interprets the top of the stack as ascii and pushes the corresponding character.
   # 10+	        push		  Pushes the literal number n-10 onto the stack.
 
-
   # Custom Module Errors
   defmodule IntruderInChickenCoopError do
-    defexception message: "Invalid entry in chicken source code: Only \"chicken\" and \"\\n\" allowed."
+    defexception message:
+                   "Invalid entry in chicken source code: Only \"chicken\" and \"\\n\" allowed."
   end
-
 
   @doc """
     Run Chicken Code
@@ -65,12 +64,11 @@ defmodule Esolix.Langs.Chicken do
 
   defp validate_code(code) do
     String.split(code, " ")
-    |> Enum.any?( & &1 != "chicken" )
+    |> Enum.any?(&(&1 != "chicken"))
     |> if do
       raise IntruderInChickenCoopError
     end
 
     code
   end
-
 end

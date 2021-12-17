@@ -15,15 +15,18 @@ defmodule Esolix.Langs.Brainfuck do
   alias Esolix.DataStructures.Tape
 
   defmodule BrainfuckCode do
-    defstruct [
-      code: "",
-      instruction_pointer: 0,
-      tape: Tape
-    ]
+    defstruct code: "",
+              instruction_pointer: 0,
+              tape: Tape
   end
 
-  @default_tape_params [width: 300000, loop: false, cell_byte_size: 1, initial_cell_value: 0, initial_pointer: 0]
-
+  @default_tape_params [
+    width: 300_000,
+    loop: false,
+    cell_byte_size: 1,
+    initial_cell_value: 0,
+    initial_pointer: 0
+  ]
 
   # Custom Module Errors
   defmodule UnbalancedBracketsError do
@@ -49,11 +52,15 @@ defmodule Esolix.Langs.Brainfuck do
     execute_step(bf_code)
   end
 
-  defp execute_step(%BrainfuckCode{code: code, tape: tape, instruction_pointer: instruction_pointer} = bf_code) do
+  defp execute_step(
+         %BrainfuckCode{code: code, tape: tape, instruction_pointer: instruction_pointer} =
+           bf_code
+       ) do
     instruction = Enum.at(code, instruction_pointer)
     # debug(bf_code, code: false)
 
     tape = execute_instruction(instruction, tape)
+
     instruction_pointer =
       case instruction do
         ?[ ->
@@ -66,11 +73,14 @@ defmodule Esolix.Langs.Brainfuck do
                 case char do
                   ?[ ->
                     open_brackets + 1
+
                   ?] ->
                     open_brackets - 1
+
                   _ ->
                     open_brackets
                 end
+
               if open_brackets == 0 do
                 {:halt, index}
               else
@@ -81,6 +91,7 @@ defmodule Esolix.Langs.Brainfuck do
           else
             instruction_pointer + 1
           end
+
         ?] ->
           # Jump back to previous '[' if current cell not zero
           if Tape.value(tape) != 0 do
@@ -93,11 +104,14 @@ defmodule Esolix.Langs.Brainfuck do
                   case char do
                     ?[ ->
                       open_brackets - 1
+
                     ?] ->
                       open_brackets + 1
+
                     _ ->
                       open_brackets
                   end
+
                 if open_brackets == 0 do
                   {:halt, index}
                 else
@@ -107,10 +121,10 @@ defmodule Esolix.Langs.Brainfuck do
               |> Kernel.+(1)
 
             instruction_pointer - subtractor
-
           else
             instruction_pointer + 1
           end
+
         _ ->
           instruction_pointer + 1
       end
@@ -137,7 +151,8 @@ defmodule Esolix.Langs.Brainfuck do
 
     tape = init_tape(params)
 
-    code |> group_by_brackets()
+    code
+    |> group_by_brackets()
     |> Enum.reduce(tape, fn section, tape_acc ->
       run_section(section, tape_acc)
     end)
@@ -169,7 +184,7 @@ defmodule Esolix.Langs.Brainfuck do
   end
 
   defp validate_file(file) do
-    if String.ends_with?(file, ".bf"), do: file, else: raise WrongFileExtensionError, file
+    if String.ends_with?(file, ".bf"), do: file, else: raise(WrongFileExtensionError, file)
   end
 
   defp extract_file_contents(file) do
@@ -181,15 +196,16 @@ defmodule Esolix.Langs.Brainfuck do
 
     String.to_charlist(code)
     |> Enum.filter(fn char ->
-      Enum.any?(symbols, &( &1 == char))
+      Enum.any?(symbols, &(&1 == char))
     end)
   end
 
   defp validate_code(code) do
     # TODO if brackets are balnced also check if they are positioned correctly to catch cases like "]+++["
-    unless Enum.count(code, & &1 == ?[) == Enum.count(code, & &1 == ?]) do
+    unless Enum.count(code, &(&1 == ?[)) == Enum.count(code, &(&1 == ?])) do
       raise UnbalancedBracketsError
     end
+
     code
   end
 
@@ -198,6 +214,7 @@ defmodule Esolix.Langs.Brainfuck do
       # Case 1: Skip Section and jump behind corresponding "]"
       String.starts_with?(code, "[") && Tape.value(tape) == 0 ->
         tape
+
       # Case 2: Run Section between []-brackets, at the end decide if the bracket section needs to be done another time
       String.starts_with?(code, "[") ->
         tape =
@@ -206,11 +223,14 @@ defmodule Esolix.Langs.Brainfuck do
           |> Enum.reduce(tape, fn section, tape_acc ->
             run_section(section, tape_acc)
           end)
+
         # Reached end of bracket section, if current cell != 0 do it again
         if Tape.value(tape) != 0, do: run_section(code, tape), else: tape
+
       # Case 3: Run single instructions
       true ->
-        code |> String.to_charlist()
+        code
+        |> String.to_charlist()
         |> Enum.reduce(tape, fn char, tape_acc ->
           execute_instruction(char, tape_acc)
         end)
@@ -238,9 +258,21 @@ defmodule Esolix.Langs.Brainfuck do
     end
   end
 
-  defp debug(%BrainfuckCode{code: code, instruction_pointer: instruction_pointer, tape: tape} = bf_code, opts \\ []) do
+  defp debug(
+         %BrainfuckCode{code: code, instruction_pointer: instruction_pointer, tape: tape} =
+           bf_code,
+         opts \\ []
+       ) do
     if opts[:code] do
-      IO.inspect(List.replace_at(code, instruction_pointer, " ''''  #{[Enum.at(code, instruction_pointer)]}  '''' ") |> List.to_string(), label: "code")
+      IO.inspect(
+        List.replace_at(
+          code,
+          instruction_pointer,
+          " ''''  #{[Enum.at(code, instruction_pointer)]}  '''' "
+        )
+        |> List.to_string(),
+        label: "code"
+      )
     end
 
     IO.inspect("#{[Enum.at(code, instruction_pointer)]}", label: "#{instruction_pointer}")
@@ -248,7 +280,5 @@ defmodule Esolix.Langs.Brainfuck do
     IO.puts("\n")
     IO.puts("\n")
     IO.puts("\n")
-
   end
-
 end

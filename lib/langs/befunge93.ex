@@ -6,7 +6,6 @@ defmodule Esolix.Langs.Befunge93 do
   # Data Structure used:
   # alias Esolix.DataStructures.Tape
 
-
   # Custom Module Errors
   defmodule CustomModuleError do
     defexception [:message]
@@ -16,7 +15,6 @@ defmodule Esolix.Langs.Befunge93 do
       %CustomModuleError{message: msg}
     end
   end
-
 
   @doc """
     Run Befunge93 Code
@@ -60,5 +58,4 @@ defmodule Esolix.Langs.Befunge93 do
     graphemes = String.graphemes(code)
     # Do something
   end
-
 end
