@@ -10,6 +10,7 @@ defmodule Esolix.Langs.ChickenTest do
         Chicken.eval("some code")
       end) == "Hello World!\n"
     end
+  end
 
   describe "eval_file/3" do
     test "hello_world file should print \"Hello World!\"" do

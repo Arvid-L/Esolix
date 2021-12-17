@@ -20,9 +20,9 @@ defmodule Mix.Tasks.Template.Gen do
         System.cmd("gsed", ["-ri", "s/Template/#{String.capitalize(arg)}/", "#{@path_lang}/#{arg}.ex"])
 
         System.cmd("mkdir", ["#{@path_test}/#{arg}"])
-        System.cmd("cp", ["#{@path_test}/_template.ex", "#{@path_test}/#{arg}/#{arg}_test.ex"])
-        System.cmd("gsed", ["-ri", "s/Template/#{String.capitalize(arg)}/", "#{@path_test}/#{arg}/#{arg}_test.ex"])
-        System.cmd("gsed", ["-ri", "s/template/#{arg}/", "#{@path_test}/#{arg}/#{arg}_test.ex"])
+        System.cmd("cp", ["#{@path_test}/_template.exs", "#{@path_test}/#{arg}/#{arg}_test.exs"])
+        System.cmd("gsed", ["-ri", "s/Template/#{String.capitalize(arg)}/", "#{@path_test}/#{arg}/#{arg}_test.exs"])
+        System.cmd("gsed", ["-ri", "s/template/#{arg}/", "#{@path_test}/#{arg}/#{arg}_test.exs"])
 
     end
   end
