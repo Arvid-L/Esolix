@@ -22,17 +22,12 @@ defmodule Esolix.Langs.Brainfuck do
     ]
   end
 
-  @default_tape_params [width: 10, loop: false, cell_byte_size: 1, initial_cell_value: 0, initial_pointer: 0]
+  @default_tape_params [width: 300000, loop: false, cell_byte_size: 1, initial_cell_value: 0, initial_pointer: 0]
 
 
   # Custom Module Errors
   defmodule UnbalancedBracketsError do
-    defexception [:message]
-
-    def exception() do
-      msg = "Invalid Brainfuck Code caused by unbalanced square brackets"
-      %UnbalancedBracketsError{message: msg}
-    end
+    defexception message: "Invalid Brainfuck Code caused by unbalanced square brackets"
   end
 
   defmodule WrongFileExtensionError do
@@ -45,8 +40,11 @@ defmodule Esolix.Langs.Brainfuck do
   end
 
   def eval_alt(code, params \\ []) do
-    validate_code(code)
-    bf_code = %BrainfuckCode{code: String.to_charlist(code), tape: init_tape(params)}
+    code =
+      clean_code(code)
+      |> validate_code()
+
+    bf_code = %BrainfuckCode{code: code, tape: init_tape(params)}
 
     execute_step(bf_code)
   end
@@ -132,7 +130,11 @@ defmodule Esolix.Langs.Brainfuck do
 
   """
   def eval(code, params \\ []) do
-    validate_code(code)
+    code =
+      clean_code(code)
+      |> validate_code()
+      |> List.to_string()
+
     tape = init_tape(params)
 
     code |> group_by_brackets()
@@ -174,12 +176,21 @@ defmodule Esolix.Langs.Brainfuck do
     File.read!(file)
   end
 
+  defp clean_code(code) do
+    symbols = '[]+-,.<>'
+
+    String.to_charlist(code)
+    |> Enum.filter(fn char ->
+      Enum.any?(symbols, &( &1 == char))
+    end)
+  end
+
   defp validate_code(code) do
     # TODO if brackets are balnced also check if they are positioned correctly to catch cases like "]+++["
-    graphemes = String.graphemes(code)
-    unless Enum.count(graphemes, & &1 == "[") == Enum.count(graphemes, & &1 == "]") do
+    unless Enum.count(code, & &1 == ?[) == Enum.count(code, & &1 == ?]) do
       raise UnbalancedBracketsError
     end
+    code
   end
 
   defp run_section(code, tape) do
