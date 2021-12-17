@@ -8,12 +8,15 @@ defmodule Esolix.DataStructures.Tape do
     cells: [],
     cell_bit_size: 8,
     loop: false,
-    input: "",
-    output: ""
+    input: [],
+    output: []
   ]
 
   # TODO: Optimize, find bottlenecks. Some steps take way too much time
-  # TODO: Optimize data structure by using bitstrings instead of Elixirs default bignum
+  # If all else fails, steal ideas from here: https://github.com/jhbabon/brainfuck.ex
+
+  # DONE: Optimize data structure by using bitstrings instead of Elixirs default bignum
+  #  I know finally understand bitstrings, but I don't think this improved performance
 
   alias Esolix.DataStructures.Tape
 
@@ -33,8 +36,8 @@ defmodule Esolix.DataStructures.Tape do
     cell_bit_size = cell_byte_size * 8
     initial_cell_value = params[:initial_cell_value] || 0
     loop = params[:loop] || false
-    input = params[:input] || ""
-    input = String.to_charlist(input)
+    input =
+      if String.valid?(params[:input]), do: String.to_charlist(params[:input]), else: []
 
     cells = List.duplicate(<<initial_cell_value::size(cell_bit_size)>>, width)
 
@@ -60,32 +63,25 @@ defmodule Esolix.DataStructures.Tape do
     val
   end
 
-  def inc(%Tape{cell_bit_size: cell_bit_size} = tape) do
-    data = Tape.value(tape)
-    write(tape, <<data+1::size(cell_bit_size)>>)
+  def inc(%Tape{} = tape) do
+    write(tape, Tape.value(tape) + 1)
   end
 
-  def dec(%Tape{cell_bit_size: cell_bit_size} = tape) do
-    data = Tape.value(tape)
-    write(tape, <<data-1::size(cell_bit_size)>>)
+  def dec(%Tape{} = tape) do
+    write(tape, Tape.value(tape) - 1)
   end
 
-  def handle_input(%Tape{input: input, cell_bit_size: cell_bit_size} = tape) do
-    {tape, input} =
-      case length(input) do
-        0 ->
-          {tape, []}
-        _ ->
-          [char | remaining_input] = input
-          char = <<char::size(cell_bit_size)>>
-          {write(tape, char), remaining_input}
-      end
-
-    %{tape | input: input}
+  def handle_input(%Tape{input: input} = tape) do
+    if input == [] do
+      tape
+    else
+      [head | tail] = input
+      %{write(tape, head) | input: tail}
+    end
   end
 
-  defp write(%Tape{cells: cells, pointer: pointer} = tape, data) do
-    cells = List.replace_at(cells, pointer, data)
+  def write(%Tape{cells: cells, pointer: pointer, cell_bit_size: cell_bit_size} = tape, data) do
+    cells = List.replace_at(cells, pointer, <<data::size(cell_bit_size)>>)
     %{tape | cells: cells}
   end
 
@@ -118,22 +114,5 @@ defmodule Esolix.DataStructures.Tape do
     %{tape | pointer: pointer}
   end
 
-  # defp validate_overflow(%Tape{cell_byte_size: cell_byte_size}, cell) do
-  #   case cell_byte_size do
-  #     :no_limit ->
-  #       cell
-  #     _ ->
-  #       max_size = Bitwise.bsl(1, cell_byte_size * 8)
-  #       cond do
-  #         cell >= max_size ->
-  #           rem(cell, max_size)
-  #         cell < 0 ->
-  #           max_size - 1
-  #         true ->
-  #           cell
-  #       end
-  #   end
-
-  # end
 
 end
