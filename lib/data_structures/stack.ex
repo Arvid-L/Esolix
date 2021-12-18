@@ -20,4 +20,14 @@ defmodule Esolix.DataStructures.Stack do
   end
 
   def depth(%Stack{elements: elements}), do: length(elements)
+
+  def at(%Stack{elements: elements}, address) do
+    address = address + 1
+    Enum.at(elements, -address)
+  end
+
+  def store_at(%Stack{elements: elements}, address, value) do
+    address = address + 1
+    %Stack{elements: List.replace_at(elements, -address, value)}
+  end
 end
