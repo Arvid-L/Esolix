@@ -13,9 +13,9 @@ defmodule Mix.Tasks.Befunge93 do
         arg = Enum.at(args, 0)
 
         if File.exists?(Enum.at(args, 0)) do
-          Befunge93.eval_file(arg)
+          Befunge93.execute_file(arg)
         else
-          Befunge93.eval(arg)
+          Befunge93.execute(arg)
         end
     end
   end
