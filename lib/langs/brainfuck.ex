@@ -14,7 +14,7 @@ defmodule Esolix.Langs.Brainfuck do
 
   alias Esolix.DataStructures.Tape
 
-  defmodule BrainfuckCode do
+  defmodule BrainfuckTape do
     defstruct code: "",
               instruction_pointer: 0,
               tape: Tape
@@ -47,13 +47,13 @@ defmodule Esolix.Langs.Brainfuck do
       clean_code(code)
       |> validate_code()
 
-    bf_code = %BrainfuckCode{code: code, tape: init_tape(params)}
+    bf_code = %BrainfuckTape{code: code, tape: init_tape(params)}
 
     execute_step(bf_code)
   end
 
   defp execute_step(
-         %BrainfuckCode{code: code, tape: tape, instruction_pointer: instruction_pointer} =
+         %BrainfuckTape{code: code, tape: tape, instruction_pointer: instruction_pointer} =
            bf_code
        ) do
     instruction = Enum.at(code, instruction_pointer)
@@ -259,7 +259,7 @@ defmodule Esolix.Langs.Brainfuck do
   end
 
   defp debug(
-         %BrainfuckCode{code: code, instruction_pointer: instruction_pointer, tape: tape} =
+         %BrainfuckTape{code: code, instruction_pointer: instruction_pointer, tape: tape} =
            bf_code,
          opts \\ []
        ) do

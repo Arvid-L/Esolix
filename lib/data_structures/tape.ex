@@ -76,13 +76,10 @@ defmodule Esolix.DataStructures.Tape do
     write(tape, Tape.value(tape) - 1)
   end
 
-  def handle_input(%Tape{input: input} = tape) do
-    if input == [] do
-      tape
-    else
-      [head | tail] = input
-      %{write(tape, head) | input: tail}
-    end
+  def handle_input(%Tape{input: []} = tape), do: tape
+
+  def handle_input(%Tape{input: [head | tail]} = tape) do
+    %{write(tape, head) | input: tail}
   end
 
   def write(%Tape{cells: cells, pointer: pointer, cell_bit_size: cell_bit_size} = tape, data) do
