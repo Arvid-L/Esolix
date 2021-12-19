@@ -5,6 +5,7 @@ Collection of different esolang (esoteric programming language) interpreters, im
 
 ## Which Esolangs are already (kind of) implemented?
 
+- Befunge-93 (https://esolangs.org/wiki/Befunge#Befunge-93_and_Befunge-98)
 - Brainfuck (https://esolangs.org/wiki/Brainfuck)
 - Chicken (https://esolangs.org/wiki/Chicken) (don't try this because the specifications for this didn't really make sense)
 
