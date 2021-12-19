@@ -14,9 +14,9 @@ defmodule Mix.Tasks.Chicken do
         input = Enum.at(args, 1)
 
         if File.exists?(Enum.at(args, 0)) do
-          Chicken.eval_file(arg, input: input)
+          Chicken.execute_file(arg, input: input)
         else
-          Chicken.eval(arg, input: input)
+          Chicken.execute(arg, input: input)
         end
     end
   end

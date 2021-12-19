@@ -13,9 +13,9 @@ defmodule Mix.Tasks.Brainfuck do
         arg = Enum.at(args, 0)
 
         if File.exists?(Enum.at(args, 0)) do
-          Brainfuck.eval_file(arg)
+          Brainfuck.execute_file(arg)
         else
-          Brainfuck.eval(arg)
+          Brainfuck.execute(arg)
         end
     end
   end

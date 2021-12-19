@@ -13,9 +13,9 @@ defmodule Mix.Tasks.Template do
         arg = Enum.at(args, 0)
 
         if File.exists?(Enum.at(args, 0)) do
-          Template.eval_file(arg)
+          Template.execute_file(arg)
         else
-          Template.eval(arg)
+          Template.execute(arg)
         end
     end
   end

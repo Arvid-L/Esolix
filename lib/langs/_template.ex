@@ -6,6 +6,8 @@ defmodule Esolix.Langs.Template do
   # Data Structure used:
   # alias Esolix.DataStructures.Tape
 
+  import ExUnit.CaptureIO
+
   # Custom Module Errors
   defmodule CustomModuleError do
     defexception [:message]
@@ -17,7 +19,7 @@ defmodule Esolix.Langs.Template do
   end
 
   @doc """
-    Run Template Code
+    Runs Template Code and returns the IO output as a string.
 
     ## Examples
 
@@ -26,13 +28,13 @@ defmodule Esolix.Langs.Template do
 
   """
   def eval(code, params \\ []) do
-    validate_code(code)
-
-    # Do something
+    capture_io(fn ->
+      execute(code)
+    end)
   end
 
   @doc """
-    Run Template Code from file
+    Runs Template Code from file and returns the IO output as a string.
 
     ## Examples
 
@@ -41,6 +43,37 @@ defmodule Esolix.Langs.Template do
 
   """
   def eval_file(file, params \\ []) do
+    validate_file(file)
+    |> extract_file_contents()
+    |> eval(params)
+  end
+
+  @doc """
+    Run Template Code.
+
+    ## Examples
+
+      iex> Template.execute("some hello world code")
+      "Hello World!"
+      :ok
+  """
+  def execute(code, params \\ []) do
+    validate_code(code)
+
+    # Do something
+  end
+
+  @doc """
+    Run Template Code from file.
+
+    ## Examples
+
+      iex> Template.eval_file("path/to/some/hello_world.file")
+      "Hello World!"
+      :ok
+
+  """
+  def execute_file(file, params \\ []) do
     validate_file(file)
     |> extract_file_contents()
     |> eval(params)

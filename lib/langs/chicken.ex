@@ -5,6 +5,7 @@ defmodule Esolix.Langs.Chicken do
 
   # Data Structure used:
   alias Esolix.DataStructures.Stack
+  import ExUnit.CaptureIO
 
   # I give up, I wasted way too much time on this. I'm losing my mind because the specifications are really unclear (When are things written to output? Why does the online example for "99 chickens" expect to be able to concatenate strings when using the 'add' operation? I hope I never get to meet the person that wrote these joke specifications). Some of the example code from https://esolangs.org/wiki/Chicken is obviously not able to produce "Hello World", even if I go through the program by hand.
 
@@ -53,7 +54,7 @@ defmodule Esolix.Langs.Chicken do
   end
 
   @doc """
-    Run Chicken Code
+    Runs Chicken Code and returns the IO output as a string.
 
     ## Examples
 
@@ -62,6 +63,36 @@ defmodule Esolix.Langs.Chicken do
 
   """
   def eval(code, params \\ []) do
+    capture_io(fn ->
+      execute(code, params)
+    end)
+  end
+
+  @doc """
+    Runs Chicken Code from file and returns the IO output as a string.
+
+    ## Examples
+
+      iex> Chicken.eval_file("path/to/some/hello_world.file")
+      "Hello World!"
+
+  """
+  def eval_file(file, params \\ []) do
+    file
+    |> extract_file_contents()
+    |> eval(params)
+  end
+
+  @doc """
+    Run Chicken Code
+
+    ## Examples
+
+      iex> Chicken.execute("some hello world code")
+      "Hello World!"
+
+  """
+  def execute(code, params \\ []) do
     input = params[:input] || ""
 
     input =
@@ -77,7 +108,7 @@ defmodule Esolix.Langs.Chicken do
     |> validate_code()
     |> translate_into_instructions()
     |> create_stack(input)
-    |> execute()
+    |> run()
   end
 
   @doc """
@@ -85,14 +116,14 @@ defmodule Esolix.Langs.Chicken do
 
     ## Examples
 
-      iex> Chicken.eval_file("path/to/some/hello_world.file")
+      iex> Chicken.execute_file("path/to/some/hello_world.file")
       "Hello World!"
 
   """
-  def eval_file(file, params \\ []) do
+  def execute_file(file, params \\ []) do
     file
     |> extract_file_contents()
-    |> eval(params)
+    |> execute(params)
   end
 
   defp extract_file_contents(file) do
@@ -183,19 +214,19 @@ defmodule Esolix.Langs.Chicken do
     instruction(%{chicken_stack | instruction_pointer: instruction_pointer + 1})
   end
 
-  defp execute(%ChickenStack{} = chicken_stack) do
+  defp run(%ChickenStack{} = chicken_stack) do
     # debug(chicken_stack)
 
     if instruction(chicken_stack) == "axe" do
       chicken_stack
     else
       chicken_stack
-      |> execute_instruction()
-      |> execute()
+      |> run_instruction()
+      |> run()
     end
   end
 
-  defp execute_instruction(
+  defp run_instruction(
          %ChickenStack{
            stack: stack,
            instruction_pointer: instruction_pointer

@@ -6,23 +6,16 @@ defmodule Esolix.Langs.BrainfuckTest do
 
   describe "eval/3" do
     test "Example code should print \"Hello World!\"" do
-      assert capture_io(fn ->
-               Brainfuck.eval(
-                 "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++."
-               )
-             end) == "Hello World!\n"
+      assert Brainfuck.eval("++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.") == "Hello World!\n"
     end
 
     test "should mirror input" do
-      assert capture_io(fn ->
-               Brainfuck.eval(",.,.,.,.,.,.", input: "hello!")
-             end) == "hello!"
+      assert Brainfuck.eval(",.,.,.,.,.,.", input: "hello!") == "hello!"
     end
 
     # https://esolangs.org/wiki/Brainfuck#Examples and scroll to Cell Size
     test "should calculate cell byte size correctly for 1 byte" do
-      assert capture_io(fn ->
-               Brainfuck.eval("""
+      assert Brainfuck.eval("""
                Calculate the value 256 and test if it's zero
                If the interpreter errors on overflow this is where it'll happen
                ++++++++[>++++++++<-]>[<++++>-]
@@ -44,13 +37,11 @@ defmodule Esolix.Langs.BrainfuckTest do
                >>.++.+++++++..<-.>>-
                Clean up used cells.
                [[-]<]
-               """)
-             end) == "8 bit cells\n"
+               """) == "8 bit cells\n"
     end
 
     test "should calculate cell byte size correctly for 2 bytes" do
-      assert capture_io(fn ->
-               Brainfuck.eval(
+      assert Brainfuck.eval(
                  """
                  Calculate the value 256 and test if it's zero
                  If the interpreter errors on overflow this is where it'll happen
@@ -75,13 +66,11 @@ defmodule Esolix.Langs.BrainfuckTest do
                  [[-]<]
                  """,
                  tape_params: [cell_byte_size: 2]
-               )
-             end) == "16 bit cells\n"
+               ) == "16 bit cells\n"
     end
 
     test "should calculate cell byte size correctly for 4 bytes" do
-      assert capture_io(fn ->
-               Brainfuck.eval(
+      assert Brainfuck.eval(
                  """
                  Calculate the value 256 and test if it's zero
                  If the interpreter errors on overflow this is where it'll happen
@@ -106,8 +95,7 @@ defmodule Esolix.Langs.BrainfuckTest do
                  [[-]<]
                  """,
                  tape_params: [cell_byte_size: 4]
-               )
-             end) == "32 bit cells\n"
+               ) == "32 bit cells\n"
     end
   end
 
@@ -119,29 +107,21 @@ defmodule Esolix.Langs.BrainfuckTest do
     end
 
     test "hello_world.bf should print \"Hello World!\"" do
-      assert capture_io(fn ->
-               Brainfuck.eval_file("test/langs/brainfuck/hello_world.bf")
-             end) == "Hello World!\n"
+      assert Brainfuck.eval_file("test/langs/brainfuck/hello_world.bf") == "Hello World!\n"
     end
 
     test "byte_size.bf should calculate correct byte size" do
-      assert capture_io(fn ->
-               Brainfuck.eval_file("test/langs/brainfuck/byte_size.bf",
+      assert Brainfuck.eval_file("test/langs/brainfuck/byte_size.bf",
                  tape_params: [cell_byte_size: 1]
-               )
-             end) == "8 bit cells\n"
+               ) == "8 bit cells\n"
 
-      assert capture_io(fn ->
-               Brainfuck.eval_file("test/langs/brainfuck/byte_size.bf",
+      assert Brainfuck.eval_file("test/langs/brainfuck/byte_size.bf",
                  tape_params: [cell_byte_size: 2]
-               )
-             end) == "16 bit cells\n"
+               ) == "16 bit cells\n"
 
-      assert capture_io(fn ->
-               Brainfuck.eval_file("test/langs/brainfuck/byte_size.bf",
+      assert Brainfuck.eval_file("test/langs/brainfuck/byte_size.bf",
                  tape_params: [cell_byte_size: 4]
-               )
-             end) == "32 bit cells\n"
+               ) == "32 bit cells\n"
     end
   end
 end

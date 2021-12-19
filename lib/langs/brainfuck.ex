@@ -13,6 +13,7 @@ defmodule Esolix.Langs.Brainfuck do
   # ]	Jump back to the matching [ if the cell at the pointer is nonzero
 
   alias Esolix.DataStructures.Tape
+  import ExUnit.CaptureIO
 
   defmodule BrainfuckTape do
     defstruct code: "",
@@ -42,24 +43,54 @@ defmodule Esolix.Langs.Brainfuck do
     end
   end
 
-  def eval_alt(code, params \\ []) do
+  @doc """
+    Runs Brainfuck Code and returns the IO output as a string.
+
+    ## Examples
+
+      iex> Template.eval("some hello world code")
+      "Hello World!"
+
+  """
+  def eval(code, params \\ []) do
+    capture_io(fn ->
+      execute(code, params)
+    end)
+  end
+
+  @doc """
+    Runs Brainfuck Code from file and returns the IO output as a string.
+
+    ## Examples
+
+      iex> Template.eval_file("path/to/some/hello_world.file")
+      "Hello World!"
+
+  """
+  def eval_file(file, params \\ []) do
+    validate_file(file)
+    |> extract_file_contents()
+    |> eval(params)
+  end
+
+  def execute_alt(code, params \\ []) do
     code =
       clean_code(code)
       |> validate_code()
 
     bf_code = %BrainfuckTape{code: code, tape: init_tape(params)}
 
-    execute_step(bf_code)
+    run_step(bf_code)
   end
 
-  defp execute_step(
+  defp run_step(
          %BrainfuckTape{code: code, tape: tape, instruction_pointer: instruction_pointer} =
            bf_code
        ) do
     instruction = Enum.at(code, instruction_pointer)
     # debug(bf_code, code: false)
 
-    tape = execute_instruction(instruction, tape)
+    tape = run_instruction(instruction, tape)
 
     instruction_pointer =
       case instruction do
@@ -130,7 +161,7 @@ defmodule Esolix.Langs.Brainfuck do
       end
 
     if instruction_pointer < length(code) do
-      execute_step(%{bf_code | instruction_pointer: instruction_pointer, tape: tape})
+      run_step(%{bf_code | instruction_pointer: instruction_pointer, tape: tape})
     end
   end
 
@@ -139,11 +170,11 @@ defmodule Esolix.Langs.Brainfuck do
 
     ## Examples
 
-      iex> Brainfuck.eval("++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.")
+      iex> Brainfuck.execute("++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.")
       "Hello World!"
 
   """
-  def eval(code, params \\ []) do
+  def execute(code, params \\ []) do
     code =
       clean_code(code)
       |> validate_code()
@@ -165,14 +196,14 @@ defmodule Esolix.Langs.Brainfuck do
 
     ## Examples
 
-      iex> Brainfuck.eval_file("path/to/hello_world.bf")
+      iex> Brainfuck.execute_file("path/to/hello_world.bf")
       "Hello World!"
 
   """
-  def eval_file(file, params \\ []) do
+  def execute_file(file, params \\ []) do
     validate_file(file)
     |> extract_file_contents()
-    |> eval(params)
+    |> execute(params)
   end
 
   defp init_tape(params \\ []) do
@@ -232,7 +263,7 @@ defmodule Esolix.Langs.Brainfuck do
         code
         |> String.to_charlist()
         |> Enum.reduce(tape, fn char, tape_acc ->
-          execute_instruction(char, tape_acc)
+          run_instruction(char, tape_acc)
         end)
     end
   end
@@ -244,7 +275,7 @@ defmodule Esolix.Langs.Brainfuck do
     Regex.split(regex, code, include_captures: true)
   end
 
-  defp execute_instruction(char, tape) do
+  defp run_instruction(char, tape) do
     case char do
       ?> -> Tape.right(tape)
       ?< -> Tape.left(tape)
