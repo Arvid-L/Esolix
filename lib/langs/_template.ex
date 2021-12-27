@@ -10,6 +10,8 @@ defmodule Esolix.Langs.Template do
 
   # Custom Module Errors
   defmodule CustomModuleError do
+    @moduledoc false
+
     defexception [:message]
 
     def exception() do

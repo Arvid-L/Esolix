@@ -4,6 +4,19 @@ defmodule Mix.Tasks.Brainfuck do
 
   alias Esolix.Langs.Brainfuck
 
+  @doc """
+    Executes Brainfuck Code either by string or by file path.
+
+    ## Examples
+
+      ```sh
+      mix template "Some hello world Brainfuck Code"
+      Hello World
+
+      mix template /path/to/brainfuck/hello_world_file
+      Hello World
+      ```
+  """
   def run(args) do
     case length(args) do
       0 ->

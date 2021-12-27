@@ -19,6 +19,7 @@ defmodule Esolix.DataStructures.Tape do
   alias Esolix.DataStructures.Tape
 
   defmodule OutOfBoundsError do
+    @moduledoc false
     defexception [:message]
 
     def exception(%Tape{} = tape) do

@@ -4,6 +4,19 @@ defmodule Mix.Tasks.Chicken do
 
   alias Esolix.Langs.Chicken
 
+  @doc """
+    Executes Chicken Code either by string or by file path.
+
+    ## Examples
+
+      ```sh
+      mix template "Some hello world Chicken Code"
+      Hello World
+
+      mix template /path/to/chicken/hello_world_file
+      Hello World
+      ```
+  """
   def run(args) do
     case length(args) do
       0 ->

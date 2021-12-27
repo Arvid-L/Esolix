@@ -1,6 +1,6 @@
 defmodule Esolix.Langs.Chicken do
   @moduledoc """
-  Documentation for the Chicken Module
+  Documentation for the Chicken Module.
   """
 
   # Data Structure used:
@@ -23,16 +23,19 @@ defmodule Esolix.Langs.Chicken do
   # 10+	        push		  Pushes the literal number n-10 onto the stack.
 
   defmodule ChickenStack do
+    @moduledoc false
     defstruct [:stack, :instruction_pointer, :instructions]
   end
 
   # Custom Module Errors
   defmodule IntruderInChickenCoopError do
+    @moduledoc false
     defexception message:
                    "Invalid entry in chicken source code: Only \"chicken\" and \"\\n\" allowed."
   end
 
   defmodule NotEnoughChickenForTheFoxesToEatError do
+    @moduledoc false
     defexception [:message]
 
     def exception([foxes, chickens]) do
@@ -43,6 +46,7 @@ defmodule Esolix.Langs.Chicken do
   end
 
   defmodule UndefinedPickError do
+    @moduledoc false
     defexception [:message]
 
     def exception(instruction) do
@@ -376,13 +380,13 @@ defmodule Esolix.Langs.Chicken do
     end
   end
 
-  def debug(
-        %ChickenStack{
-          stack: stack,
-          instruction_pointer: instruction_pointer,
-          instructions: instructions
-        } = chicken_stack
-      ) do
+  defp debug(
+         %ChickenStack{
+           stack: stack,
+           instruction_pointer: instruction_pointer,
+           instructions: instructions
+         } = chicken_stack
+       ) do
     IO.puts("\n\n\n")
     IO.inspect(chicken_stack, limit: :infinity, pretty: true)
 

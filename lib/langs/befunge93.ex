@@ -42,11 +42,13 @@ defmodule Esolix.Langs.Befunge93 do
   @max_height 25
 
   defmodule Befunge93Stack do
+    @moduledoc false
     defstruct [:stack, :code, :x, :y, :direction, :string_mode?]
   end
 
   # Custom Module Errors
   defmodule InvalidDirectionError do
+    @moduledoc false
     defexception [:message]
 
     def exception(direction) do

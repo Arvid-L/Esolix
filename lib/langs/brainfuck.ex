@@ -16,6 +16,7 @@ defmodule Esolix.Langs.Brainfuck do
   import ExUnit.CaptureIO
 
   defmodule BrainfuckTape do
+    @moduledoc false
     defstruct code: "",
               instruction_pointer: 0,
               tape: Tape
@@ -31,10 +32,12 @@ defmodule Esolix.Langs.Brainfuck do
 
   # Custom Module Errors
   defmodule UnbalancedBracketsError do
+    @moduledoc false
     defexception message: "Invalid Brainfuck Code caused by unbalanced square brackets"
   end
 
   defmodule WrongFileExtensionError do
+    @moduledoc false
     defexception [:message]
 
     def exception(file) do
