@@ -57,6 +57,7 @@ defmodule Esolix.Langs.Befunge93 do
     end
   end
 
+  @spec eval(String.t(), keyword()) :: String.t()
   @doc """
     Runs Befunge93 Code and returns the IO output as a string.
 
@@ -72,6 +73,7 @@ defmodule Esolix.Langs.Befunge93 do
     end)
   end
 
+  @spec eval_file(String.t(), keyword()) :: String.t()
   @doc """
     Runs Befunge93 Code from a file and returns the IO output as a string.
 
@@ -87,6 +89,7 @@ defmodule Esolix.Langs.Befunge93 do
     |> eval(params)
   end
 
+  @spec execute(String.t(), keyword()) :: :ok
   @doc """
     Run Befunge93 Code
 
@@ -113,6 +116,7 @@ defmodule Esolix.Langs.Befunge93 do
     :ok
   end
 
+  @spec execute_file(String.t(), keyword()) :: :ok
   @doc """
     Runs Befunge93 Code from a file.
 

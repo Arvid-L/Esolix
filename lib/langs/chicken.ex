@@ -57,6 +57,7 @@ defmodule Esolix.Langs.Chicken do
     end
   end
 
+  @spec eval(String.t(), keyword()) :: String.t()
   @doc """
     Runs Chicken Code and returns the IO output as a string.
 
@@ -72,6 +73,7 @@ defmodule Esolix.Langs.Chicken do
     end)
   end
 
+  @spec eval_file(String.t(), keyword()) :: String.t()
   @doc """
     Runs Chicken Code from file and returns the IO output as a string.
 
@@ -87,6 +89,7 @@ defmodule Esolix.Langs.Chicken do
     |> eval(params)
   end
 
+  @spec execute(String.t(), keyword()) :: :ok
   @doc """
     Run Chicken Code
 
@@ -113,8 +116,11 @@ defmodule Esolix.Langs.Chicken do
     |> translate_into_instructions()
     |> create_stack(input)
     |> run()
+
+    :ok
   end
 
+  @spec execute_file(String.t(), keyword()) :: :ok
   @doc """
     Run Chicken Code from file
 

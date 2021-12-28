@@ -46,6 +46,7 @@ defmodule Esolix.Langs.Brainfuck do
     end
   end
 
+  @spec eval(String.t(), keyword()) :: String.t()
   @doc """
     Runs Brainfuck Code and returns the IO output as a string.
 
@@ -61,6 +62,7 @@ defmodule Esolix.Langs.Brainfuck do
     end)
   end
 
+  @spec eval_file(String.t(), keyword()) :: String.t()
   @doc """
     Runs Brainfuck Code from file and returns the IO output as a string.
 
@@ -76,6 +78,7 @@ defmodule Esolix.Langs.Brainfuck do
     |> eval(params)
   end
 
+  @spec execute_alt(String.t(), keyword()) :: :ok
   def execute_alt(code, params \\ []) do
     code =
       clean_code(code)
@@ -84,6 +87,51 @@ defmodule Esolix.Langs.Brainfuck do
     bf_code = %BrainfuckTape{code: code, tape: init_tape(params)}
 
     run_step(bf_code)
+
+    :ok
+  end
+
+  @spec execute(String.t(), keyword()) :: :ok
+  @doc """
+    Run Brainfuck Code
+
+    ## Examples
+
+      iex> Brainfuck.execute("++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.")
+      "Hello World!"
+
+  """
+  def execute(code, params \\ []) do
+    code =
+      clean_code(code)
+      |> validate_code()
+      |> List.to_string()
+
+    tape = init_tape(params)
+
+    code
+    |> group_by_brackets()
+    |> Enum.reduce(tape, fn section, tape_acc ->
+      run_section(section, tape_acc)
+    end)
+
+    :ok
+  end
+
+  @spec execute_file(String.t(), keyword()) :: :ok
+  @doc """
+    Run Brainfuck Code from file
+
+    ## Examples
+
+      iex> Brainfuck.execute_file("path/to/hello_world.bf")
+      "Hello World!"
+
+  """
+  def execute_file(file, params \\ []) do
+    validate_file(file)
+    |> extract_file_contents()
+    |> execute(params)
   end
 
   defp run_step(
@@ -166,47 +214,6 @@ defmodule Esolix.Langs.Brainfuck do
     if instruction_pointer < length(code) do
       run_step(%{bf_code | instruction_pointer: instruction_pointer, tape: tape})
     end
-  end
-
-  @doc """
-    Run Brainfuck Code
-
-    ## Examples
-
-      iex> Brainfuck.execute("++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.")
-      "Hello World!"
-
-  """
-  def execute(code, params \\ []) do
-    code =
-      clean_code(code)
-      |> validate_code()
-      |> List.to_string()
-
-    tape = init_tape(params)
-
-    code
-    |> group_by_brackets()
-    |> Enum.reduce(tape, fn section, tape_acc ->
-      run_section(section, tape_acc)
-    end)
-
-    :ok
-  end
-
-  @doc """
-    Run Brainfuck Code from file
-
-    ## Examples
-
-      iex> Brainfuck.execute_file("path/to/hello_world.bf")
-      "Hello World!"
-
-  """
-  def execute_file(file, params \\ []) do
-    validate_file(file)
-    |> extract_file_contents()
-    |> execute(params)
   end
 
   defp init_tape(params \\ []) do

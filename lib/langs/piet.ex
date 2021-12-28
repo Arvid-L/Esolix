@@ -20,6 +20,7 @@ defmodule Esolix.Langs.Piet do
     end
   end
 
+  @spec eval(String.t(), keyword()) :: String.t()
   @doc """
     Runs Piet Code and returns the IO output as a string.
 
@@ -35,6 +36,7 @@ defmodule Esolix.Langs.Piet do
     end)
   end
 
+  @spec eval_file(String.t(), keyword()) :: String.t()
   @doc """
     Runs Piet Code from file and returns the IO output as a string.
 
@@ -50,6 +52,7 @@ defmodule Esolix.Langs.Piet do
     |> eval(params)
   end
 
+  @spec execute(String.t(), keyword()) :: :ok
   @doc """
     Run Piet Code.
 
@@ -65,6 +68,7 @@ defmodule Esolix.Langs.Piet do
     # Do something
   end
 
+  @spec execute_file(String.t(), keyword()) :: :ok
   @doc """
     Run Piet Code from file.
 

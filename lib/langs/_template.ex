@@ -20,6 +20,7 @@ defmodule Esolix.Langs.Template do
     end
   end
 
+  @spec eval(String.t(), keyword()) :: String.t()
   @doc """
     Runs Template Code and returns the IO output as a string.
 
@@ -35,6 +36,7 @@ defmodule Esolix.Langs.Template do
     end)
   end
 
+  @spec eval_file(String.t(), keyword()) :: String.t()
   @doc """
     Runs Template Code from file and returns the IO output as a string.
 
@@ -50,6 +52,7 @@ defmodule Esolix.Langs.Template do
     |> eval(params)
   end
 
+  @spec execute(String.t(), keyword()) :: :ok
   @doc """
     Run Template Code.
 
@@ -65,6 +68,7 @@ defmodule Esolix.Langs.Template do
     # Do something
   end
 
+  @spec execute_file(String.t(), keyword()) :: :ok
   @doc """
     Run Template Code from file.
 
