@@ -19,6 +19,16 @@ defmodule Esolix.DataStructures.Stack do
   ################################################
 
   @spec push(t(), any()) :: t()
+  @doc """
+    Pushes a value or a list of values onto the stack. Returns a stack.
+
+    ## Examples
+
+      iex> Stack.init() |> Stack.push(0) |> Stack.push(1) |> Stack.push(2)
+      %Stack{elements: [2, 1, 0]}
+      iex> Stack.init() |> Stack.push([3, 4, 5])
+      %Stack{elements: [5, 4, 3]}
+  """
   def push(stack, elements) when is_list(elements) do
     Enum.reduce(elements, stack, fn element, stack_acc ->
       Stack.push(stack_acc, element)
@@ -29,6 +39,19 @@ defmodule Esolix.DataStructures.Stack do
     %Stack{stack | elements: [element | stack.elements]}
   end
 
+  @spec pushn(t(), list(), non_neg_integer()) :: t()
+  @doc """
+    Pushes a single value `n` times on the stack. Returns a stack.
+
+    ## Examples
+
+      iex> stack = Stack.init() |> Stack.push(0) |> Stack.pushn(33, 3)
+      %Stack{elements: [33, 33, 33, 0]}
+  """
+  def pushn(%Stack{} = stack, value, n) do
+    Stack.push(stack, List.duplicate(value, n))
+  end
+
   @spec pop(t()) :: {any(), t()}
   def pop(%Stack{elements: []}), do: {0, %Stack{}}
 
@@ -37,13 +60,26 @@ defmodule Esolix.DataStructures.Stack do
   end
 
   @spec popn(t(), non_neg_integer()) :: {list(), t()}
-  def popn(%Stack{} = stack, n) do
-    Enum.reduce(Enum.to_list(1..n), {[], stack}, fn _i, acc ->
-      {arguments, stack} = acc
-      {argument, stack} = Stack.pop(stack)
+  @doc """
+    Pops `n` elements off the stack. Returns a tuple, containing the list of popped values and the stack after the pop operations.
 
-      {[argument | arguments], stack}
-    end)
+    ## Examples
+
+      iex> stack = Stack.init() |> Stack.push(0) |> Stack.push(1) |> Stack.push(2) |> Stack.push(3)
+      %Stack{elements: [3, 2, 1, 0]}
+      iex> Stack.popn(stack, 3)
+      {[3, 2, 1], %Stack{elements: [0]}}
+  """
+  def popn(%Stack{} = stack, n) do
+    {popped_elements, stack} =
+      Enum.reduce(Enum.to_list(1..n), {[], stack}, fn _i, acc ->
+        {popped_elements, stack} = acc
+        {popped_element, stack} = Stack.pop(stack)
+
+        {[popped_element | popped_elements], stack}
+      end)
+
+    {Enum.reverse(popped_elements), stack}
   end
 
   @spec depth(t()) :: non_neg_integer
@@ -76,9 +112,9 @@ defmodule Esolix.DataStructures.Stack do
       iex> stack = Stack.init() |> Stack.push(0) |> Stack.push(1) |> Stack.push(2)
       %Stack{elements: [2, 1, 0]}
       iex> Stack.sub(stack)
-      %Stack{elements: [-1, 0]}
-      iex> Stack.sub(stack, order: [1, 0])
       %Stack{elements: [1, 0]}
+      iex> Stack.sub(stack, order: [1, 0])
+      %Stack{elements: [-1, 0]}
   """
   def sub(%Stack{} = stack, opts \\ []),
     do: Stack.apply(stack, &Kernel.-/2, order: Keyword.get(opts, :order, [0, 1]))
@@ -118,9 +154,9 @@ defmodule Esolix.DataStructures.Stack do
     integer_division = Keyword.get(opts, :integer, true)
 
     if integer_division do
-      Stack.apply(stack, &Kernel.//2, order: order)
-    else
       Stack.apply(stack, &Kernel.div/2, order: order)
+    else
+      Stack.apply(stack, &Kernel.//2, order: order)
     end
   end
 
@@ -130,7 +166,7 @@ defmodule Esolix.DataStructures.Stack do
 
     The `:order` of the arguments can be set by the `:order` parameter, which defaults to [0, 1, ..., arity].
 
-    Example: Using the function &Kernel.-/2 will default to: `second_element_popped - first_element_popped`, as counting starts from the bottom of stack. Using `order: [1, 0]` will result in `first_element_popped - second_element_popped`.
+    Example: Using the function &Kernel.-/2 will default to: `first_element_popped - second_element_popped`. Using `order: [1, 0]` will result in `second_element_popped - first_element_popped`.
 
     ## Examples
 
@@ -139,9 +175,9 @@ defmodule Esolix.DataStructures.Stack do
       iex> Stack.apply(stack, &Kernel.+/2)
       %Stack{elements: [3, 0]}
       iex> Stack.apply(stack, &Kernel.-/2, order: [0, 1])
-      %Stack{elements: [-1, 0]}
-      iex> Stack.apply(stack, &Kernel.-/2, order: [1, 0])
       %Stack{elements: [1, 0]}
+      iex> Stack.apply(stack, &Kernel.-/2, order: [1, 0])
+      %Stack{elements: [-1, 0]}
   """
   def apply(%Stack{} = stack, fun, opts \\ []) do
     arity = Keyword.get(:erlang.fun_info(fun), :arity)

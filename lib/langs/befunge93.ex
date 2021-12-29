@@ -197,45 +197,25 @@ defmodule Esolix.Langs.Befunge93 do
         # Execution Mode Handling
         case instruction do
           ?+ ->
-            {a, stack} = Stack.pop(stack)
-            {b, stack} = Stack.pop(stack)
-
-            %{bf_stack | stack: Stack.push(stack, a + b)}
+            %{bf_stack | stack: Stack.add(stack)}
 
           ?- ->
-            {a, stack} = Stack.pop(stack)
-            {b, stack} = Stack.pop(stack)
-
-            %{bf_stack | stack: Stack.push(stack, b - a)}
+            %{bf_stack | stack: Stack.sub(stack, order: [1, 0])}
 
           ?* ->
-            {a, stack} = Stack.pop(stack)
-            {b, stack} = Stack.pop(stack)
-
-            %{bf_stack | stack: Stack.push(stack, a * b)}
+            %{bf_stack | stack: Stack.mul(stack)}
 
           ?/ ->
-            {a, stack} = Stack.pop(stack)
-            {b, stack} = Stack.pop(stack)
-
-            %{bf_stack | stack: Stack.push(stack, Integer.floor_div(b, a))}
+            %{bf_stack | stack: Stack.div(stack, order: [1, 0])}
 
           ?% ->
-            {a, stack} = Stack.pop(stack)
-            {b, stack} = Stack.pop(stack)
-
-            %{bf_stack | stack: Stack.push(stack, Integer.mod(b, a))}
+            %{bf_stack | stack: Stack.apply(stack, &Integer.mod/2, order: [1, 0])}
 
           ?! ->
-            {a, stack} = Stack.pop(stack)
-
-            %{bf_stack | stack: Stack.push(stack, if(a == 0, do: 1, else: 0))}
+            %{bf_stack | stack: Stack.apply(stack, &if(&1 == 0, do: 1, else: 0))}
 
           ?` ->
-            {a, stack} = Stack.pop(stack)
-            {b, stack} = Stack.pop(stack)
-
-            %{bf_stack | stack: Stack.push(stack, if(b > a, do: 1, else: 0))}
+            %{bf_stack | stack: Stack.apply(stack, &if(&1 < &2, do: 1, else: 0))}
 
           ?_ ->
             {a, stack} = Stack.pop(stack)
@@ -259,13 +239,12 @@ defmodule Esolix.Langs.Befunge93 do
           ?: ->
             {a, stack} = Stack.pop(stack)
 
-            %{bf_stack | stack: stack |> Stack.push(a) |> Stack.push(a)}
+            %{bf_stack | stack: stack |> Stack.push([a, a])}
 
           ?\\ ->
-            {a, stack} = Stack.pop(stack)
-            {b, stack} = Stack.pop(stack)
+            {[a, b], stack} = Stack.popn(stack, 2)
 
-            %{bf_stack | stack: stack |> Stack.push(a) |> Stack.push(b)}
+            %{bf_stack | stack: stack |> Stack.push([a, b])}
 
           ?$ ->
             {_, stack} = Stack.pop(stack)
@@ -296,9 +275,7 @@ defmodule Esolix.Langs.Befunge93 do
             %{bf_stack | stack: Stack.push(stack, instruction_at(code, x_get, y_get))}
 
           ?p ->
-            {y_get, stack} = Stack.pop(stack)
-            {x_get, stack} = Stack.pop(stack)
-            {value, stack} = Stack.pop(stack)
+            {[y_get, x_get, value], stack} = Stack.popn(stack, 3)
 
             %{bf_stack | stack: stack, code: overwrite_at(code, x_get, y_get, value)}
 
