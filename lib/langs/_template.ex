@@ -3,8 +3,9 @@ defmodule Esolix.Langs.Template do
   Documentation for the Template Module
   """
 
-  # Data Structure used:
+  # Data Structure(s) used:
   # alias Esolix.DataStructures.Tape
+  # alias Esolix.DataStructures.Stack
 
   import ExUnit.CaptureIO
 
@@ -82,7 +83,7 @@ defmodule Esolix.Langs.Template do
   def execute_file(file, params \\ []) do
     validate_file(file)
     |> extract_file_contents()
-    |> eval(params)
+    |> execute(params)
   end
 
   defp validate_file(file) do
