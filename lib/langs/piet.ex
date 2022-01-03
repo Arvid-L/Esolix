@@ -36,9 +36,37 @@ defmodule Esolix.Langs.Piet do
   #   end
   # end
 
+  defmodule Codel do
+    @moduledoc false
+    defstruct [:color, :hue]
+  end
+
+  @colors %{
+    white: {255, 255, 255},
+    black: {0, 0, 0},
+    light_red: {255, 192, 192},
+    red: {255, 0, 0},
+    dark_red: {192, 0, 0},
+    light_yellow: {255, 255, 192},
+    yellow: {255, 255, 0},
+    dark_yellow: {192, 192, 0},
+    light_green: {192, 255, 192},
+    green: {0, 255, 0},
+    dark_green: {0, 192, 0},
+    light_cyan: {192, 255, 255},
+    cyan: {0, 255, 255},
+    dark_cyan: {0, 192, 192},
+    light_blue: {192, 192, 255},
+    blue: {0, 0, 255},
+    dark_blue: {0, 0, 192},
+    light_magenta: {255, 192, 255},
+    magenta: {255, 0, 255},
+    dark_magenta: {192, 0, 192}
+  }
+
   @spec eval(pixels(), keyword()) :: String.t()
   @doc """
-    Runs Piet Code (List of Codels) and returns the IO output as a string.
+    Run Piet Code (represented as pixels, represented as RGB values) and returns the IO output as a string.
 
     ## Examples
 
@@ -46,9 +74,9 @@ defmodule Esolix.Langs.Piet do
       "Hello World!"
 
   """
-  def eval(codels, params \\ []) do
+  def eval(pixels, params \\ []) do
     capture_io(fn ->
-      execute(codels)
+      execute(pixels)
     end)
   end
 
@@ -70,7 +98,7 @@ defmodule Esolix.Langs.Piet do
 
   @spec execute(pixels(), keyword()) :: :ok
   @doc """
-    Run Piet Code (Codels).
+    Run Piet Code (represented as pixels, represented as RGB values).
 
     ## Examples
 
@@ -78,8 +106,10 @@ defmodule Esolix.Langs.Piet do
       "Hello World!"
       :ok
   """
-  def execute(codels, _params \\ []) do
-    IO.inspect(codels)
+  def execute(pixels, _params \\ []) do
+    pixels
+    |> pixels_to_codels()
+    |> IO.inspect()
 
     :ok
   end
@@ -124,6 +154,51 @@ defmodule Esolix.Langs.Piet do
 
       _ ->
         raise "Error while extracting PNG image data"
+    end
+  end
+
+  defp pixels_to_codels(pixels) do
+    pixels
+    |> Enum.map(fn line ->
+      line
+      |> Enum.map(fn pixel ->
+        pixel_to_codel(pixel)
+      end)
+    end)
+  end
+
+  defp pixel_to_codel(pixel) do
+    @colors
+    |> Enum.find(fn {_color_name, color_value} -> color_value == pixel end)
+    |> case do
+      nil ->
+        # Treat other colors as white
+        %Codel{color: :white, hue: :none}
+
+      {color_name, _color_value} ->
+        %Codel{color: color_name, hue: get_hue_by_color_name(color_name)}
+    end
+  end
+
+  defp get_hue_by_color_name(color_name) do
+    Atom.to_string(color_name)
+    |> String.split("_")
+    |> Enum.at(0)
+    |> case do
+      "white" ->
+        :none
+
+      "black" ->
+        :none
+
+      "light" ->
+        :light
+
+      "dark" ->
+        :dark
+
+      _ ->
+        :normal
     end
   end
 end
