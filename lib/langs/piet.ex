@@ -63,6 +63,8 @@ defmodule Esolix.Langs.Piet do
     magenta: {255, 0, 255},
     dark_magenta: {192, 0, 192}
   }
+  @hue_cycle [:light, :normal, :dark]
+  @color_cycle [:red, :yellow, :green, :cyan, :blue, :magenta]
 
   @spec eval(pixels(), keyword()) :: String.t()
   @doc """
@@ -201,4 +203,44 @@ defmodule Esolix.Langs.Piet do
         :normal
     end
   end
+
+  defp hue_difference(%Codel{hue: hue_1}, %Codel{hue: hue_2}), do: hue_difference(hue_1, hue_2)
+
+  defp hue_difference(hue_1, hue_2) do
+    if :none in [hue_1, hue_2] do
+      :error
+    else
+      Integer.mod(
+        hue_index(hue_2) - hue_index(hue_1),
+        length(@hue_cycle)
+      )
+    end
+  end
+
+  defp color_difference(%Codel{color: color_1}, %Codel{color: color_2}),
+    do: color_difference(color_1, color_2)
+
+  defp color_difference(color_1, color_2) do
+    if Enum.any?([color_1, color_2], &(&1 in [:black, :white])) do
+      :error
+    else
+      Integer.mod(
+        color_index(color_2) - color_index(color_1),
+        length(@color_cycle)
+      )
+    end
+  end
+
+  defp color_index(:red), do: 0
+  defp color_index(:yellow), do: 1
+  defp color_index(:green), do: 2
+  defp color_index(:cyan), do: 3
+  defp color_index(:blue), do: 4
+  defp color_index(:magenta), do: 5
+  defp color_index(_other), do: :none
+
+  defp hue_index(:light), do: 0
+  defp hue_index(:normal), do: 1
+  defp hue_index(:dark), do: 2
+  defp hue_index(_other), do: :none
 end
