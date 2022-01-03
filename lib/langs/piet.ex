@@ -41,6 +41,11 @@ defmodule Esolix.Langs.Piet do
     defstruct [:color, :hue]
   end
 
+  defmodule PietExecutor do
+    @moduledoc false
+    defstruct [:codels, :stack, :dp, :cc, :codel_coord, :codel_current, :locked_in_attempts]
+  end
+
   @colors %{
     white: {255, 255, 255},
     black: {0, 0, 0},
@@ -109,9 +114,19 @@ defmodule Esolix.Langs.Piet do
       :ok
   """
   def execute(pixels, _params \\ []) do
-    pixels
-    |> pixels_to_codels()
-    |> IO.inspect()
+    codels = pixels_to_codels(pixels)
+
+    piet_exec = %PietExecutor{
+      codels: codels,
+      stack: Stack.init(),
+      codel_coord: {0, 0},
+      codel_current: Enum.at(codels, 0) |> Enum.at(0),
+      dp: :right,
+      cc: :left,
+      locked_in_attempts: 0
+    }
+
+    execute_step(piet_exec)
 
     :ok
   end
@@ -133,6 +148,179 @@ defmodule Esolix.Langs.Piet do
     |> execute(params)
 
     :ok
+  end
+
+  defp execute_step(
+         %PietExecutor{
+           codels: codels,
+           codel_coord: codel_coord,
+           codel_current: codel_current,
+           dp: dp,
+           cc: cc,
+           locked_in_attempts: locked_in_attempts
+         } = piet_exec
+       ) do
+    next_coords = next_coordinates(codel_coord, dp)
+    next_codel = codel_at(codels, next_coords)
+
+    cond do
+      # Case 1: Next Codel identical, carry on
+      next_codel == codel_current ->
+        execute_step(%{piet_exec | codel_coord: next_coords, codel_current: next_codel})
+
+      # Case 2: Next Codel is black or edge: toggle cc or dp and try again
+      next_codel in [nil, %Codel{color: :black, hue: :none}] ->
+        execute_step(%{
+          piet_exec
+          | cc: maybe_toggle_cc(cc, locked_in_attempts),
+            dp: maybe_toggle_dp(dp, locked_in_attempts),
+            locked_in_attempts: locked_in_attempts + 1
+        })
+
+      # Case 3: Max number of locked in attempts reached, terminate program
+      locked_in_attempts == 8 ->
+        piet_exec
+
+      # Case 4: Next Codel is white:
+      next_codel == %Codel{color: :white, hue: :none} ->
+        IO.puts("white")
+
+      # slide across?
+      # Case 5: Next Codel is another valid color, parse command
+      true ->
+        color_difference = color_difference(codel_current, next_codel)
+        hue_difference = hue_difference(codel_current, next_codel)
+
+        command = get_command(color_difference, hue_difference)
+    end
+  end
+
+  defp get_command(color_difference, hue_difference) do
+    case {color_difference, hue_difference} do
+      {0, 0} ->
+        :error
+
+      {0, 1} ->
+        :push
+
+      {0, 2} ->
+        :pop
+
+      {1, 0} ->
+        :add
+
+      {1, 1} ->
+        :sub
+
+      {1, 2} ->
+        :mul
+
+      {2, 0} ->
+        :div
+
+      {2, 1} ->
+        :mod
+
+      {2, 2} ->
+        :not
+
+      {3, 0} ->
+        :greater
+
+      {3, 1} ->
+        :pointer
+
+      {3, 2} ->
+        :switch
+
+      {4, 0} ->
+        :duplicate
+
+      {4, 1} ->
+        :roll
+
+      {4, 2} ->
+        :in_num
+
+      {5, 0} ->
+        :in_char
+
+      {5, 1} ->
+        :out_num
+
+      {5, 2} ->
+        :out_char
+    end
+  end
+
+  defp maybe_toggle_cc(cc, locked_in_attempts) do
+    case {cc, rem(locked_in_attempts, 2)} do
+      {:left, 0} ->
+        :right
+
+      {:right, 0} ->
+        :left
+
+      {cc, 1} ->
+        cc
+
+      _ ->
+        cc
+    end
+  end
+
+  defp maybe_toggle_dp(dp, locked_in_attempts) do
+    case {dp, rem(locked_in_attempts, 2)} do
+      {:up, 1} ->
+        :right
+
+      {:right, 1} ->
+        :down
+
+      {:down, 1} ->
+        :left
+
+      {:left, 1} ->
+        :up
+
+      {dp, 0} ->
+        dp
+
+      _ ->
+        dp
+    end
+  end
+
+  defp codel_at(codels, {x, y}) do
+    if -1 in [x, y] do
+      nil
+    else
+      line = Enum.at(codels, y)
+      if line, do: Enum.at(line, x), else: nil
+    end
+  end
+
+  defp next_coordinates({x, y}, direction) do
+    case direction do
+      :right ->
+        {x + 1, y}
+
+      :up ->
+        {x, y - 1}
+
+      :left ->
+        {x - 1, y}
+
+      :down ->
+        {x, y + 1}
+
+      direction ->
+        raise "Invalid direction: #{direction}"
+    end
+  end
+
+  defp out_of_bounds?({x, y}, codels) do
+    codel_at(codels, {x, y}) == nil
   end
 
   defp validate_file(file) do
