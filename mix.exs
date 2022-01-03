@@ -23,6 +23,8 @@ defmodule Esolix.MixProject do
     [
       {:benchee, "~> 1.0", only: :dev},
       {:ex_doc, "~> 0.26", only: :dev, runtime: false},
+      {:imagineer, git: "https://github.com/tyre/imagineer", ref: "a6872296756cde19f8f575a7d1854d0fe7cbcb02"},
+
     ]
   end
 end
