@@ -3,26 +3,42 @@ defmodule Esolix.Langs.Piet do
   Documentation for the Piet Module
   """
 
-  # Data Structure used:
-  # alias Esolix.DataStructures.Tape
+  # Data Structure used
+  alias Esolix.DataStructures.Stack
 
   import ExUnit.CaptureIO
 
-  # Custom Module Errors
-  defmodule CustomModuleError do
-    @moduledoc false
+  @typedoc """
+  List containing lines of pixels.
+  """
+  @type pixels :: list(pixel_line())
 
-    defexception [:message]
+  @typedoc """
+  List of pixels, represented as RGB values.
+  """
+  @type pixel_line :: list(pixel_rgb)
 
-    def exception() do
-      msg = "Something went wrong I think"
-      %CustomModuleError{message: msg}
-    end
-  end
+  @typedoc """
+  Tuple, representing a Pixel by its RGB values: {Red, Green, Blue}
+  """
+  @type pixel_rgb :: {non_neg_integer(), non_neg_integer(), non_neg_integer()}
 
-  @spec eval(String.t(), keyword()) :: String.t()
+  # # Custom Module Errors
+  # defmodule CustomModuleError do
+  #   @moduledoc false
+
+  #   defexception [:message]
+
+  #   def exception() do
+  #     msg = "Something went wrong I think"
+  #     %CustomModuleError{message: msg}
+
+  #   end
+  # end
+
+  @spec eval(pixels(), keyword()) :: String.t()
   @doc """
-    Runs Piet Code and returns the IO output as a string.
+    Runs Piet Code (List of Codels) and returns the IO output as a string.
 
     ## Examples
 
@@ -30,15 +46,15 @@ defmodule Esolix.Langs.Piet do
       "Hello World!"
 
   """
-  def eval(code, params \\ []) do
+  def eval(codels, params \\ []) do
     capture_io(fn ->
-      execute(code)
+      execute(codels)
     end)
   end
 
   @spec eval_file(String.t(), keyword()) :: String.t()
   @doc """
-    Runs Piet Code from file and returns the IO output as a string.
+    Runs Piet Code from a .png file and returns the IO output as a string
 
     ## Examples
 
@@ -48,13 +64,13 @@ defmodule Esolix.Langs.Piet do
   """
   def eval_file(file, params \\ []) do
     validate_file(file)
-    |> extract_file_contents()
+    |> extract_pixels()
     |> eval(params)
   end
 
-  @spec execute(String.t(), keyword()) :: :ok
+  @spec execute(pixels(), keyword()) :: :ok
   @doc """
-    Run Piet Code.
+    Run Piet Code (Codels).
 
     ## Examples
 
@@ -62,39 +78,52 @@ defmodule Esolix.Langs.Piet do
       "Hello World!"
       :ok
   """
-  def execute(code, params \\ []) do
-    validate_code(code)
+  def execute(codels, _params \\ []) do
+    IO.inspect(codels)
 
-    # Do something
+    :ok
   end
 
   @spec execute_file(String.t(), keyword()) :: :ok
   @doc """
-    Run Piet Code from file.
+    Run Piet Code from a .png file.
 
     ## Examples
 
-      iex> Piet.eval_file("path/to/some/hello_world.file")
+      iex> Piet.eval_file("path/to/some/hello_world.png")
       "Hello World!"
       :ok
 
   """
   def execute_file(file, params \\ []) do
     validate_file(file)
-    |> extract_file_contents()
-    |> eval(params)
+    |> extract_pixels()
+    |> execute(params)
+
+    :ok
   end
 
   defp validate_file(file) do
-    # Do something
+    case {File.exists?(file), Path.extname(file) |> String.downcase()} do
+      {false, _} ->
+        raise "File #{file} does not exist"
+
+      {true, ".png"} ->
+        file
+
+      _ ->
+        raise "File #{file} is not a png"
+    end
   end
 
-  defp extract_file_contents(file) do
-    File.read!(file)
-  end
+  defp extract_pixels(file) do
+    case Imagineer.load(file) do
+      {:ok, image_data} ->
+        IO.inspect(image_data)
+        Map.get(image_data, :pixels)
 
-  defp validate_code(code) do
-    graphemes = String.graphemes(code)
-    # Do something
+      _ ->
+        raise "Error while extracting PNG image data"
+    end
   end
 end
