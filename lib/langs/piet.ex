@@ -152,6 +152,7 @@ defmodule Esolix.Langs.Piet do
 
   defp execute_step(
          %PietExecutor{
+           stack: stack,
            codels: codels,
            codel_coord: codel_coord,
            codel_current: codel_current,
@@ -191,32 +192,48 @@ defmodule Esolix.Langs.Piet do
         color_difference = color_difference(codel_current, next_codel)
         hue_difference = hue_difference(codel_current, next_codel)
 
-        command = get_command(color_difference, hue_difference)
+        piet_exec = execute_command(piet_exec, {color_difference, hue_difference})
     end
   end
 
-  defp get_command(color_difference, hue_difference) do
+  defp execute_command(
+         %PietExecutor{
+           stack: stack,
+           codels: codels,
+           codel_coord: codel_coord,
+           codel_current: codel_current,
+           dp: dp,
+           cc: cc,
+           locked_in_attempts: locked_in_attempts
+         } = piet_exec,
+         {color_difference, hue_difference}
+       ) do
     case {color_difference, hue_difference} do
-      {0, 0} ->
-        :error
-
+      # Push
       {0, 1} ->
-        :push
+        stack = Stack.push(stack, block_size(codels, codel_coord))
 
+        %{piet_exec | stack: stack}
+
+      # Pop
       {0, 2} ->
-        :pop
+        {_, stack} = Stack.pop(stack)
 
+        %{piet_exec | stack: stack}
+
+      # Add
       {1, 0} ->
-        :add
+        %{piet_exec | stack: Stack.add(stack)}
 
+      # Sub
       {1, 1} ->
-        :sub
+        %{piet_exec | stack: Stack.sub(stack, order: [1, 0])}
 
       {1, 2} ->
-        :mul
+        %{piet_exec | stack: Stack.mul(stack)}
 
       {2, 0} ->
-        :div
+        %{piet_exec | stack: Stack.div(stack), order: [1, 0]}
 
       {2, 1} ->
         :mod
@@ -250,6 +267,9 @@ defmodule Esolix.Langs.Piet do
 
       {5, 2} ->
         :out_char
+
+      other ->
+        raise "Error, invalid command: #{other}"
     end
   end
 
@@ -419,6 +439,39 @@ defmodule Esolix.Langs.Piet do
     end
   end
 
+  defp block_size(codels, {_x, _y} = coords) do
+    get_all_identical_neighbors(codels, [coords])
+    |> length()
+  end
+
+  # This function can still be optimized by keeping track which coordinates have already checked their neighbors. Like a node in a graph that has been marked as visited. Optimize this if you run into performance issues later.
+  defp get_all_identical_neighbors(codels, list_of_coords) do
+    list_of_coords_plus_neighbors =
+      list_of_coords
+      |> Enum.map(fn coords ->
+        get_identical_neighbors(codels, coords)
+      end)
+      |> List.flatten()
+      |> Enum.uniq()
+      |> Enum.sort()
+
+    if list_of_coords == list_of_coords_plus_neighbors do
+      list_of_coords_plus_neighbors
+    else
+      get_all_identical_neighbors(codels, list_of_coords_plus_neighbors)
+    end
+  end
+
+  defp get_identical_neighbors(codels, {_x, _y} = coords) do
+    curr_codel = codel_at(codels, coords)
+    up = if codel_at(codels, up(coords)) == curr_codel, do: up(coords)
+    left = if codel_at(codels, left(coords)) == curr_codel, do: left(coords)
+    right = if codel_at(codels, right(coords)) == curr_codel, do: right(coords)
+    down = if codel_at(codels, down(coords)) == curr_codel, do: down(coords)
+
+    Enum.filter([coords, up, left, right, down], & &1)
+  end
+
   defp color_index(:red), do: 0
   defp color_index(:yellow), do: 1
   defp color_index(:green), do: 2
@@ -431,4 +484,13 @@ defmodule Esolix.Langs.Piet do
   defp hue_index(:normal), do: 1
   defp hue_index(:dark), do: 2
   defp hue_index(_other), do: :none
+
+  defp up({x, y}), do: {x, y - 1}
+  defp right({x, y}), do: {x + 1, y}
+  defp down({x, y}), do: {x, y + 1}
+  defp left({x, y}), do: {x - 1, y}
+
+  defp debug(%PietExecutor{} = piet_exec) do
+    IO.inspect(piet_exec)
+  end
 end
