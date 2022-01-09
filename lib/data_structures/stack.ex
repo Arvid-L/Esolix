@@ -136,9 +136,7 @@ defmodule Esolix.DataStructures.Stack do
 
   @spec div(t(), keyword()) :: t()
   @doc """
-    Pops two elements off the stack, divdes them according to :order and pushes the result.
-
-    Will use integer division by default. Set `:integer` to false for normal division.
+    Pops two elements off the stack, divdes them according to :order and pushes the result. Will use integer division by default. Set `:integer` to false for normal division.
 
     ## Examples
 
@@ -160,6 +158,61 @@ defmodule Esolix.DataStructures.Stack do
     end
   end
 
+  @spec logical_not(t(), keyword()) :: t()
+  @doc """
+    Pops one element off the stack, then pushes `0` back on the stack if the value is non-zero, `1` otherwise.
+
+    ## Examples
+
+      iex> stack = Stack.init() |> Stack.push(33)
+      %Stack{elements: [33]}
+      iex> stack = Stack.logical_not(stack)
+      %Stack{elements: [0]}
+      iex> Stack.logical_not(stack)
+      %Stack{elements: [1]}
+  """
+  def logical_not(%Stack{} = stack, opts \\ []) do
+    Stack.apply(stack, &if(&1 == 0, do: 1, else: 0), opts)
+  end
+
+  @spec greater_than(t(), keyword()) :: t()
+  @doc """
+    Pops two elements, `top` and `bottom` off the stack. Pushes 1 on the stack if `bottom` > `top`, otherwise pushes `0`. Can be reversed by calling function with `order: :reverse`.
+
+    ## Examples
+
+      iex> stack = Stack.init() |> Stack.push([10, 20])
+      %Stack{elements: [20, 10]}
+      iex> stack = Stack.greater_than(stack)
+      %Stack{elements: [0]}
+      iex> Stack.greater_than(stack, order: [1, 0])
+      %Stack{elements: [1]}
+      iex> Stack.greater_than(stack, order: :reverse)
+      %Stack{elements: [1]}
+  """
+  def greater_than(%Stack{} = stack, opts \\ []) do
+    Stack.apply(stack, &if(&2 > &1, do: 1, else: 0), opts)
+  end
+
+  @spec duplicate(t(), keyword()) :: t()
+  @doc """
+    Pops one element off the stack, then pushes that element twice back onto the stack.
+
+    ## Examples
+
+      iex> stack = Stack.init() |> Stack.push(3)
+      %Stack{elements: [3]}
+      iex> stack = Stack.duplicate()
+      %Stack{elements: [3, 3]}
+      iex> stack = Stack.duplicate()
+      %Stack{elements: [3, 3, 3]}
+  """
+  def duplicate(%Stack{} = stack, opts \\ []) do
+    {value, stack} = Stack.pop(stack)
+
+    Stack.push(stack, [value, value])
+  end
+
   @spec apply(t(), function(), keyword()) :: t()
   @doc """
     Using the provided function `fun/n`, pops `n` elements off the stack and uses them as arguments for `fun/n`. Result will be pushed onto the stack.
@@ -178,10 +231,19 @@ defmodule Esolix.DataStructures.Stack do
       %Stack{elements: [1, 0]}
       iex> Stack.apply(stack, &Kernel.-/2, order: [1, 0])
       %Stack{elements: [-1, 0]}
+      iex> Stack.apply(stack, &Kernel.-/2, order: :reverse)
+      %Stack{elements: [-1, 0]}
   """
   def apply(%Stack{} = stack, fun, opts \\ []) do
     arity = Keyword.get(:erlang.fun_info(fun), :arity)
     order = Keyword.get(opts, :order, 0..(arity - 1) |> Enum.to_list())
+
+    order =
+      if order == :reverse do
+        (arity - 1)..0 |> Enum.to_list()
+      else
+        order
+      end
 
     if arity != length(order),
       do:

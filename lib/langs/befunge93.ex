@@ -200,22 +200,22 @@ defmodule Esolix.Langs.Befunge93 do
             %{bf_stack | stack: Stack.add(stack)}
 
           ?- ->
-            %{bf_stack | stack: Stack.sub(stack, order: [1, 0])}
+            %{bf_stack | stack: Stack.sub(stack, order: :reverse)}
 
           ?* ->
             %{bf_stack | stack: Stack.mul(stack)}
 
           ?/ ->
-            %{bf_stack | stack: Stack.div(stack, order: [1, 0])}
+            %{bf_stack | stack: Stack.div(stack, order: :reverse)}
 
           ?% ->
-            %{bf_stack | stack: Stack.apply(stack, &Integer.mod/2, order: [1, 0])}
+            %{bf_stack | stack: Stack.apply(stack, &Integer.mod/2, order: :reverse)}
 
           ?! ->
-            %{bf_stack | stack: Stack.apply(stack, &if(&1 == 0, do: 1, else: 0))}
+            %{bf_stack | stack: Stack.logical_not(stack)}
 
           ?` ->
-            %{bf_stack | stack: Stack.apply(stack, &if(&1 < &2, do: 1, else: 0))}
+            %{bf_stack | stack: Stack.greater_than(stack)}
 
           ?_ ->
             {a, stack} = Stack.pop(stack)
@@ -237,9 +237,7 @@ defmodule Esolix.Langs.Befunge93 do
             %{bf_stack | string_mode?: true}
 
           ?: ->
-            {a, stack} = Stack.pop(stack)
-
-            %{bf_stack | stack: stack |> Stack.push([a, a])}
+            %{bf_stack | stack: Stack.duplicate(stack)}
 
           ?\\ ->
             {[a, b], stack} = Stack.popn(stack, 2)
