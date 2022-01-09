@@ -126,8 +126,6 @@ defmodule Esolix.Langs.Piet do
       locked_in_attempts: 0
     }
 
-    # IO.inspect(codels)
-
     execute_step(piet_exec)
 
     :ok
@@ -163,10 +161,10 @@ defmodule Esolix.Langs.Piet do
            locked_in_attempts: locked_in_attempts
          } = piet_exec
        ) do
-    next_coords = next_coordinates(codel_coord, dp)
+    next_coords = next_coordinates(codels, codel_coord, dp, cc)
     next_codel = codel_at(codels, next_coords)
 
-    debug(piet_exec, next_coords, next_codel, block_size(codels, codel_coord))
+    # debug(piet_exec, next_coords, next_codel, block_size(codels, codel_coord))
 
     cond do
       # Case 1: Next Codel identical, carry on
@@ -198,7 +196,12 @@ defmodule Esolix.Langs.Piet do
 
         piet_exec = execute_command(piet_exec, {color_difference, hue_difference})
 
-        execute_step(%{piet_exec | codel_coord: next_coords, codel_current: next_codel})
+        execute_step(%{
+          piet_exec
+          | codel_coord: next_coords,
+            codel_current: next_codel,
+            locked_in_attempts: 0
+        })
     end
   end
 
@@ -214,7 +217,7 @@ defmodule Esolix.Langs.Piet do
          } = piet_exec,
          {color_difference, hue_difference}
        ) do
-    debug({color_difference, hue_difference})
+    # debug({color_difference, hue_difference})
 
     case {color_difference, hue_difference} do
       # Push
@@ -347,6 +350,7 @@ defmodule Esolix.Langs.Piet do
 
   defp rotate_dp(dp, rotations) do
     direction = if rotations > 0, do: :clockwise, else: :counterclockwise
+    rotations = abs(rotations)
 
     dp_cycle =
       case direction do
@@ -392,22 +396,77 @@ defmodule Esolix.Langs.Piet do
     end
   end
 
-  defp next_coordinates({x, y}, direction) do
-    case direction do
+  defp next_coordinates(codels, {x, y}, dp, cc) do
+    color_block(codels, {x, y})
+    |> furthest_dp(dp)
+    |> furthest_cc(dp, cc)
+    |> Enum.at(0)
+    |> neighbor_coordinate(dp)
+  end
+
+  defp furthest_dp(coords, dp) do
+    max_function =
+      case dp do
+        :left ->
+          fn {x, _y} -> -x end
+
+        :up ->
+          fn {_x, y} -> -y end
+
+        :right ->
+          fn {x, _y} -> x end
+
+        :down ->
+          fn {_x, y} -> y end
+
+        _ ->
+          raise "Invalid direction pointer value"
+      end
+
+    {max_x, max_y} = Enum.max_by(coords, max_function)
+
+    filter_function =
+      cond do
+        dp in [:left, :right] ->
+          fn {x, _y} -> x == max_x end
+
+        dp in [:up, :down] ->
+          fn {_x, y} -> y == max_y end
+      end
+
+    Enum.filter(coords, filter_function)
+  end
+
+  defp furthest_cc(coords, dp, cc) do
+    # Since the Codel Chooser direction is relative to the absolute Direction Pointer direction, we must translate it into an absoulte direction
+    # This is achieved by rotating the Direction Pointer once into the direction of the Codel Chooser
+
+    cc_absolute =
+      case cc do
+        :left ->
+          rotate_dp(dp, -1)
+
+        :right ->
+          rotate_dp(dp, 1)
+      end
+
+    # Now we can just run furthest_dp again, using the already filtered coordinates and the absolute Codel Chooser direction instead of the Direction Pointer
+    furthest_dp(coords, cc_absolute)
+  end
+
+  defp neighbor_coordinate({x, y}, dp) do
+    case dp do
+      :left ->
+        left({x, y})
+
       :right ->
-        {x + 1, y}
+        right({x, y})
 
       :up ->
-        {x, y - 1}
-
-      :left ->
-        {x - 1, y}
+        up({x, y})
 
       :down ->
-        {x, y + 1}
-
-      direction ->
-        raise "Invalid direction: #{direction}"
+        down({x, y})
     end
   end
 
@@ -515,26 +574,38 @@ defmodule Esolix.Langs.Piet do
     end
   end
 
+  def color_block(codels, {_x, _y} = coords) do
+    get_all_identical_neighbors(codels, %{unchecked: [coords], checked: []})
+  end
+
   defp block_size(codels, {_x, _y} = coords) do
-    get_all_identical_neighbors(codels, [coords])
+    get_all_identical_neighbors(codels, %{unchecked: [coords], checked: []})
     |> length()
   end
 
-  # This function can still be optimized by keeping track which coordinates have already checked their neighbors. Like a node in a graph that has been marked as visited. Optimize this if you run into performance issues later.
-  defp get_all_identical_neighbors(codels, list_of_coords) do
-    list_of_coords_plus_neighbors =
-      list_of_coords
+  defp get_all_identical_neighbors(
+         codels,
+         %{unchecked: unchecked_coords, checked: checked_coords}
+       ) do
+    unchecked_coords_neighbors =
+      unchecked_coords
       |> Enum.map(fn coords ->
         get_identical_neighbors(codels, coords)
       end)
       |> List.flatten()
       |> Enum.uniq()
-      |> Enum.sort()
 
-    if list_of_coords == list_of_coords_plus_neighbors do
-      list_of_coords_plus_neighbors
+    checked_coords_updated = Enum.uniq(checked_coords ++ unchecked_coords)
+
+    if Enum.sort(checked_coords_updated) == Enum.sort(checked_coords) do
+      # No new neighbors found, end search
+      checked_coords
     else
-      get_all_identical_neighbors(codels, list_of_coords_plus_neighbors)
+      # Check neighbors of the newfound unchecked neighbors
+      get_all_identical_neighbors(codels, %{
+        unchecked: unchecked_coords_neighbors,
+        checked: checked_coords_updated
+      })
     end
   end
 
@@ -545,7 +616,7 @@ defmodule Esolix.Langs.Piet do
     right = if codel_at(codels, right(coords)) == curr_codel, do: right(coords)
     down = if codel_at(codels, down(coords)) == curr_codel, do: down(coords)
 
-    Enum.filter([coords, up, left, right, down], & &1)
+    Enum.filter([up, left, right, down], & &1)
   end
 
   defp color_index(:red), do: 0
