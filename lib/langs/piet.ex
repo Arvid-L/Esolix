@@ -126,6 +126,8 @@ defmodule Esolix.Langs.Piet do
       locked_in_attempts: 0
     }
 
+    # IO.inspect(codels)
+
     execute_step(piet_exec)
 
     :ok
@@ -164,6 +166,8 @@ defmodule Esolix.Langs.Piet do
     next_coords = next_coordinates(codel_coord, dp)
     next_codel = codel_at(codels, next_coords)
 
+    debug(piet_exec, next_coords, next_codel, block_size(codels, codel_coord))
+
     cond do
       # Case 1: Next Codel identical, carry on
       next_codel == codel_current ->
@@ -193,6 +197,8 @@ defmodule Esolix.Langs.Piet do
         hue_difference = hue_difference(codel_current, next_codel)
 
         piet_exec = execute_command(piet_exec, {color_difference, hue_difference})
+
+        execute_step(%{piet_exec | codel_coord: next_coords, codel_current: next_codel})
     end
   end
 
@@ -208,6 +214,8 @@ defmodule Esolix.Langs.Piet do
          } = piet_exec,
          {color_difference, hue_difference}
        ) do
+    debug({color_difference, hue_difference})
+
     case {color_difference, hue_difference} do
       # Push
       {0, 1} ->
@@ -227,46 +235,81 @@ defmodule Esolix.Langs.Piet do
 
       # Sub
       {1, 1} ->
-        %{piet_exec | stack: Stack.sub(stack, order: [1, 0])}
+        %{piet_exec | stack: Stack.sub(stack, order: :reverse)}
 
+      # Mul
       {1, 2} ->
         %{piet_exec | stack: Stack.mul(stack)}
 
+      # Div
       {2, 0} ->
-        %{piet_exec | stack: Stack.div(stack), order: [1, 0]}
+        %{piet_exec | stack: Stack.div(stack, order: :reverse)}
 
+      # Mod
       {2, 1} ->
-        :mod
+        %{piet_exec | stack: Stack.apply(stack, &Integer.mod/2, order: :reverse)}
 
+      # Not
       {2, 2} ->
-        :not
+        %{piet_exec | stack: Stack.logical_not(stack, order: :reverse)}
 
+      # Greater than
       {3, 0} ->
-        :greater
+        %{piet_exec | stack: Stack.greater_than(stack)}
 
+      # Rotate Direction Pointer
       {3, 1} ->
-        :pointer
+        {rotations, stack} = Stack.pop(stack)
+        dp = rotate_dp(dp, rotations)
 
+        %{piet_exec | stack: stack, dp: dp}
+
+      # Toggle Codel Chooser
       {3, 2} ->
-        :switch
+        {toggles, stack} = Stack.pop(stack)
+        cc = toggle_cc(dp, toggles)
 
+        %{piet_exec | stack: stack, cc: cc}
+
+      # Duplicate
       {4, 0} ->
-        :duplicate
+        %{piet_exec | stack: Stack.duplicate(stack)}
 
+      # Roll
       {4, 1} ->
-        :roll
+        {rolls, stack} = Stack.pop(stack)
+        {depth, stack} = Stack.pop(stack)
+        {elements_to_roll, stack} = Stack.popn(stack, depth)
 
+        stack = Stack.push(stack, roll(elements_to_roll, rolls) |> Enum.reverse())
+
+        %{piet_exec | stack: stack}
+
+      # Input Number
       {4, 2} ->
-        :in_num
+        input = IO.gets("") |> String.trim() |> String.to_integer()
 
+        %{piet_exec | stack: Stack.push(stack, input)}
+
+      # Input Char
       {5, 0} ->
-        :in_char
+        input = IO.gets("") |> String.to_charlist() |> Enum.at(0)
 
+        %{piet_exec | stack: Stack.push(stack, input)}
+
+      # Output Number
       {5, 1} ->
-        :out_num
+        {output, stack} = Stack.pop(stack)
+        IO.write(output)
 
+        %{piet_exec | stack: stack}
+
+      # Output Char
       {5, 2} ->
-        :out_char
+        {output, stack} = Stack.pop(stack)
+        IO.write([output])
+
+        %{piet_exec | stack: stack}
 
       other ->
         raise "Error, invalid command: #{other}"
@@ -274,15 +317,20 @@ defmodule Esolix.Langs.Piet do
   end
 
   defp maybe_toggle_cc(cc, locked_in_attempts) do
-    case {cc, rem(locked_in_attempts, 2)} do
-      {:left, 0} ->
+    if rem(locked_in_attempts, 2) == 0 do
+      toggle_cc(cc)
+    else
+      cc
+    end
+  end
+
+  defp toggle_cc(cc, toggles \\ 1) do
+    case {cc, rem(toggles, 2)} do
+      {:left, 1} ->
         :right
 
-      {:right, 0} ->
+      {:right, 1} ->
         :left
-
-      {cc, 1} ->
-        cc
 
       _ ->
         cc
@@ -290,25 +338,49 @@ defmodule Esolix.Langs.Piet do
   end
 
   defp maybe_toggle_dp(dp, locked_in_attempts) do
-    case {dp, rem(locked_in_attempts, 2)} do
-      {:up, 1} ->
-        :right
-
-      {:right, 1} ->
-        :down
-
-      {:down, 1} ->
-        :left
-
-      {:left, 1} ->
-        :up
-
-      {dp, 0} ->
-        dp
-
-      _ ->
-        dp
+    if rem(locked_in_attempts, 2) == 1 do
+      rotate_dp(dp, 1)
+    else
+      dp
     end
+  end
+
+  defp rotate_dp(dp, rotations) do
+    direction = if rotations > 0, do: :clockwise, else: :counterclockwise
+
+    dp_cycle =
+      case direction do
+        :clockwise ->
+          [:left, :up, :right, :down]
+
+        :counterclockwise ->
+          [:left, :down, :right, :up]
+      end
+
+    current = Enum.find_index(dp_cycle, &(&1 == dp))
+    next = Integer.mod(current + rotations, 4)
+
+    Enum.at(dp_cycle, next)
+  end
+
+  defp roll(elements, 0), do: elements
+
+  defp roll(elements, rolls) when rolls < 0 do
+    elements = Enum.reverse(elements)
+    rolls = -rolls
+
+    Enum.reduce(1..rolls, elements, fn _elem, acc ->
+      [head | tail] = acc
+      tail ++ [head]
+    end)
+    |> Enum.reverse()
+  end
+
+  defp roll(elements, rolls) do
+    Enum.reduce(1..rolls, elements, fn _elem, acc ->
+      [head | tail] = acc
+      tail ++ [head]
+    end)
   end
 
   defp codel_at(codels, {x, y}) do
@@ -359,7 +431,7 @@ defmodule Esolix.Langs.Piet do
   defp extract_pixels(file) do
     case Imagineer.load(file) do
       {:ok, image_data} ->
-        IO.inspect(image_data)
+        IO.inspect(image_data, limit: :infinity)
         Map.get(image_data, :pixels)
 
       _ ->
@@ -385,13 +457,13 @@ defmodule Esolix.Langs.Piet do
         # Treat other colors as white
         %Codel{color: :white, hue: :none}
 
-      {color_name, _color_value} ->
-        %Codel{color: color_name, hue: get_hue_by_color_name(color_name)}
+      {hue_and_color, _color_value} ->
+        %Codel{color: get_color(hue_and_color), hue: get_hue(hue_and_color)}
     end
   end
 
-  defp get_hue_by_color_name(color_name) do
-    Atom.to_string(color_name)
+  defp get_hue(hue_and_color) do
+    Atom.to_string(hue_and_color)
     |> String.split("_")
     |> Enum.at(0)
     |> case do
@@ -410,6 +482,10 @@ defmodule Esolix.Langs.Piet do
       _ ->
         :normal
     end
+  end
+
+  defp get_color(hue_and_color) do
+    Atom.to_string(hue_and_color) |> String.split("_") |> List.last() |> String.to_atom()
   end
 
   defp hue_difference(%Codel{hue: hue_1}, %Codel{hue: hue_2}), do: hue_difference(hue_1, hue_2)
@@ -490,7 +566,50 @@ defmodule Esolix.Langs.Piet do
   defp down({x, y}), do: {x, y + 1}
   defp left({x, y}), do: {x - 1, y}
 
-  defp debug(%PietExecutor{} = piet_exec) do
-    IO.inspect(piet_exec)
+  defp debug({c_dif, h_dif}) do
+    output =
+      case {c_dif, h_dif} do
+        {0, 1} -> "push"
+        {0, 2} -> "pop"
+        {1, 0} -> "add"
+        {1, 1} -> "sub"
+        {1, 2} -> "mul"
+        {2, 0} -> "div"
+        {2, 1} -> "mod"
+        {2, 2} -> "not"
+        {3, 0} -> "greater"
+        {3, 1} -> "pointer"
+        {3, 2} -> "switch"
+        {4, 0} -> "duplicate"
+        {4, 1} -> "roll"
+        {4, 2} -> "in number"
+        {5, 0} -> "in char"
+        {5, 1} -> "out number"
+        {5, 2} -> "out char"
+        _ -> ""
+      end
+
+    if output != "" do
+      IO.puts("\n\n COMMAND: #{String.upcase(output)}")
+    end
+  end
+
+  defp debug(
+         %PietExecutor{
+           stack: stack,
+           #  codels: codels,
+           codel_coord: {x, y},
+           codel_current: codel_current,
+           dp: dp,
+           cc: cc,
+           locked_in_attempts: locked_in_attempts
+         },
+         next_coords,
+         next_codel,
+         block_size
+       ) do
+    IO.gets("\n\nNext Step?")
+
+    IO.inspect(binding())
   end
 end
