@@ -81,7 +81,7 @@ defmodule Esolix.Langs.Piet do
       "Hello World!"
 
   """
-  def eval(pixels, params \\ []) do
+  def eval(pixels, _params \\ []) do
     capture_io(fn ->
       execute(pixels)
     end)
@@ -167,9 +167,9 @@ defmodule Esolix.Langs.Piet do
     # debug(piet_exec, next_coords, next_codel, block_size(codels, codel_coord))
 
     cond do
-      # Case 1: Next Codel identical, carry on
-      next_codel == codel_current ->
-        execute_step(%{piet_exec | codel_coord: next_coords, codel_current: next_codel})
+      # Case 1: Max number of locked in attempts reached, terminate program
+      locked_in_attempts == 8 ->
+        piet_exec
 
       # Case 2: Next Codel is black or edge: toggle cc or dp and try again
       next_codel in [nil, %Codel{color: :black, hue: :none}] ->
@@ -180,16 +180,16 @@ defmodule Esolix.Langs.Piet do
             locked_in_attempts: locked_in_attempts + 1
         })
 
-      # Case 3: Max number of locked in attempts reached, terminate program
-      locked_in_attempts == 8 ->
-        piet_exec
-
-      # Case 4: Next Codel is white:
+      # Case 3: Next Codel is white:
       next_codel == %Codel{color: :white, hue: :none} ->
-        IO.puts("white")
+        execute_step(%{
+          piet_exec
+          | codel_coord: next_coords,
+            codel_current: next_codel,
+            locked_in_attempts: 0
+        })
 
-      # slide across?
-      # Case 5: Next Codel is another valid color, parse command
+      # Case 4: Next Codel is another valid color, parse command
       true ->
         color_difference = color_difference(codel_current, next_codel)
         hue_difference = hue_difference(codel_current, next_codel)
@@ -210,10 +210,8 @@ defmodule Esolix.Langs.Piet do
            stack: stack,
            codels: codels,
            codel_coord: codel_coord,
-           codel_current: codel_current,
            dp: dp,
-           cc: cc,
-           locked_in_attempts: locked_in_attempts
+           cc: cc
          } = piet_exec,
          {color_difference, hue_difference}
        ) do
@@ -270,7 +268,7 @@ defmodule Esolix.Langs.Piet do
       # Toggle Codel Chooser
       {3, 2} ->
         {toggles, stack} = Stack.pop(stack)
-        cc = toggle_cc(dp, toggles)
+        cc = toggle_cc(cc, toggles)
 
         %{piet_exec | stack: stack, cc: cc}
 
@@ -298,7 +296,7 @@ defmodule Esolix.Langs.Piet do
       {5, 0} ->
         input = IO.gets("") |> String.to_charlist() |> Enum.at(0)
 
-        %{piet_exec | stack: Stack.push(stack, input)}
+        %{piet_exec | stack: Stack.push(stack, [input])}
 
       # Output Number
       {5, 1} ->
@@ -313,6 +311,9 @@ defmodule Esolix.Langs.Piet do
         IO.write([output])
 
         %{piet_exec | stack: stack}
+
+      {nil, nil} ->
+        piet_exec
 
       other ->
         raise "Error, invalid command: #{other}"
@@ -470,10 +471,6 @@ defmodule Esolix.Langs.Piet do
     end
   end
 
-  defp out_of_bounds?({x, y}, codels) do
-    codel_at(codels, {x, y}) == nil
-  end
-
   defp validate_file(file) do
     case {File.exists?(file), Path.extname(file) |> String.downcase()} do
       {false, _} ->
@@ -490,7 +487,6 @@ defmodule Esolix.Langs.Piet do
   defp extract_pixels(file) do
     case Imagineer.load(file) do
       {:ok, image_data} ->
-        IO.inspect(image_data, limit: :infinity)
         Map.get(image_data, :pixels)
 
       _ ->
@@ -551,7 +547,7 @@ defmodule Esolix.Langs.Piet do
 
   defp hue_difference(hue_1, hue_2) do
     if :none in [hue_1, hue_2] do
-      :error
+      nil
     else
       Integer.mod(
         hue_index(hue_2) - hue_index(hue_1),
@@ -565,7 +561,7 @@ defmodule Esolix.Langs.Piet do
 
   defp color_difference(color_1, color_2) do
     if Enum.any?([color_1, color_2], &(&1 in [:black, :white])) do
-      :error
+      nil
     else
       Integer.mod(
         color_index(color_2) - color_index(color_1),
@@ -657,7 +653,8 @@ defmodule Esolix.Langs.Piet do
         {5, 0} -> "in char"
         {5, 1} -> "out number"
         {5, 2} -> "out char"
-        _ -> ""
+        {nil, nil} -> "white into other"
+        _ -> "other"
       end
 
     if output != "" do
