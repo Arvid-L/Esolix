@@ -8,6 +8,7 @@ Collection of different esolang (esoteric programming language) interpreters, im
 - Befunge-93 (https://esolangs.org/wiki/Befunge#Befunge-93_and_Befunge-98)
 - Brainfuck (https://esolangs.org/wiki/Brainfuck)
 - Chicken (https://esolangs.org/wiki/Chicken) (don't try this because the specifications for this didn't really make sense)
+- Piet (https://www.dangermouse.net/esoteric/piet.html) (only works with PNGs) 
 
 ## Want to add another Esolang?
 
